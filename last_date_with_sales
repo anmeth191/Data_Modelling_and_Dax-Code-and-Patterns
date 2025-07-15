@@ -1,0 +1,36 @@
+## Pattern: Show Values Up to the Last Available Sales Date
+
+This pattern is useful when you want your visuals to **stop showing data beyond the last available sales date** in the `sales_order` table.
+
+It ensures the report always looks **"up to date"**, even if the date table extends beyond the data.
+
+---
+
+### 🔧 Boolean Measure (Flag)
+
+date_with_sales_measure := 
+         var max_date_sales = calculate(max('sales_order[Date]') , removefilters())
+          var current_filter_context_date = min('Date'[Date])
+            results =  current_filter_context_date <= max_date_sales 
+return 
+ result 
+  
+////////////////////////////////////////////////////////////////
+Example 
+Order Date	Sales date_with_sales_measure 
+2023-07-01	100   TRUE
+2023-07-02	150   TRUE   -----> this is the last available Date with sales 
+2023-07-03	0     FALSE
+2023-07-04	0     FALSE
+
+If you want a version that returns actual sales values only up to the last sales date:
+
+last_date_sales_amount =
+var max_date_with_sales = calculate(max('sales_order'[order_date]))
+return
+calculate([sales amount] , filter('Date' , 'Date'[Date] <= max_date_with_sales))
+
+💡 Tip
+You can swap REMOVEFILTERS() for ALLSELECTED() if you want the logic to respect slicers, while still ignoring the row-by-row date in the matrix.
+
+Thank you :) 
