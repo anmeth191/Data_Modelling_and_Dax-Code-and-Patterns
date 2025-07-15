@@ -1,0 +1,62 @@
+This pattern uses the Last_Date_With_Sales measure to ensure YTD totals stop at the last available sales date, avoiding inflated or misleading numbers in future dates.
+
+If you write a typical YTD measure like:
+
+CALCULATE([Sales Amount], DATESYTD('Date'[Date]))
+…it will keep returning the same cumulative value even after the last order date — causing flat lines or repeated values in visuals where no sales exist.
+
+Goal
+Create a conditional YTD measure that:
+
+Accurately calculates YTD
+Stops at the last sales date
+Optionally supports fiscal years
+
+🛠 Step 1 – Create the Last Sales Date Flag
+
+Last_Date_With_Sales :=
+VAR finding_max_sales_date =
+    CALCULATE(
+        MAX('sales order'[Order Date]),
+        REMOVEFILTERS()
+    )
+VAR current_date_filter_context =
+    MIN('Date'[Date])
+RETURN
+    current_date_filter_context <= finding_max_sales_date
+This measure returns TRUE for dates up to and including the last order date in the sales order table. After that, it returns FALSE.
+
+🧮 Step 2 – YTD Sales That Stops at Last Sales Date
+
+YTD_Sales_With_Cutoff :=
+IF(
+    [Last_Date_With_Sales],
+    CALCULATE(
+        [Sales Amount],
+        DATESYTD('Date'[Date])
+    )
+)
+Now your YTD sales will cut off when the data ends — no artificial trailing totals.
+
+🗓️ Step 3 – YTD with Fiscal Year (Optional)
+If you use a fiscal year ending March 31, pass that as the second argument to DATESYTD:
+
+YTD_Sales_Fiscal_With_Cutoff :=
+IF(
+    [Last_Date_With_Sales],
+    CALCULATE(
+        [Sales Amount],
+        DATESYTD('Date'[Date], "03-31")
+    )
+)
+This ensures your YTD calculation respects your fiscal calendar while still stopping at the last available data point.
+
+
+Your visuals now:
+
+Show YTD sales accurately
+Do not repeat or flatline into the future
+Work correctly with custom calendars
+
+Thank you :)
+
