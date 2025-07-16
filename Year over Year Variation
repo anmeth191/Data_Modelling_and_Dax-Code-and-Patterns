@@ -1,0 +1,90 @@
+This documentation outlines two variations of YoY Sales calculations in DAX, each designed to prevent misleading comparisons beyond the last available sales date.
+
+Goal
+Compare Sales this year vs Sales last year — but only for the date range that contains data.
+This avoids situations where a partial month in the current year is compared to a full month in the prior year.
+
+Variation 1 — Using DATEADD() (custom control)
+
+PY Sales :=
+VAR table_PY =
+    CALCULATETABLE(
+        DATEADD('Date'[Date], -1, YEAR),
+        'Date'[DateWithSales] = TRUE
+    )
+RETURN
+    IF(
+        [ShowValueForDates],
+        CALCULATE(
+            [Sales Amount],
+            table_PY
+        )
+    )
+Behavior:
+Shifts the current date range back by one year
+
+Filters only on dates that have [DateWithSales] = TRUE
+
+Uses [ShowValueForDates] to avoid showing values beyond the current max sales date
+
+Pros:
+Fully customizable
+
+Works well with non-standard calendars, filtered date logic, and partial periods
+
+Gives you manual control over how far back to go and what dates to include
+
+Watch out:
+Slightly more complex than built-in time intelligence
+
+Needs a well-maintained [DateWithSales] flag in your date table
+
+Variation 2 — Using SAMEPERIODLASTYEAR() (clean and native)
+
+SamePeriod LY :=
+IF(
+    [ShowValueForDates],
+    CALCULATE(
+        [Sales Amount],
+        SAMEPERIODLASTYEAR('Date'[Date])
+    )
+)
+
+Automatically shifts the current context to the same range in the previous year
+
+Only works if the current context is a range of contiguous dates (works best in daily-level visuals)
+
+Still uses [ShowValueForDates] to prevent future-looking data
+
+Pros:
+Very clean and readable
+
+Optimized by the DAX engine
+
+Perfect for most standard calendar YoY comparisons
+
+Watch out:
+In monthly-level visuals, it assumes the entire month — even if the current month is only partially complete
+
+Doesn’t allow much customization
+
+
+Dependency: [ShowValueForDates] Pattern
+All variations rely on this helper measure to prevent showing values beyond the last known sales date:
+
+ShowValueForDates :=
+VAR LastDateWithSales =
+    CALCULATE(
+        MAX('Sales'[Order Date]),
+        REMOVEFILTERS()
+    )
+VAR CurrentDate =
+    MIN('Date'[Date])
+RETURN
+    CurrentDate <= LastDateWithSales
+
+Summary
+These two variations give you both control and convenience in building accurate, honest YoY metrics in DAX.
+Use the pattern that fits your model, calendar, and reporting granularity.
+
+Thank you :)
