@@ -1,0 +1,75 @@
+This section documents variations of QTD sales measures, using both DATESQTD() and TOTALQTD().
+These patterns behave similarly to the YTD logic documented earlier, with optional cutoff logic based on [ShowValueForDates].
+
+Prerequisite
+Ensure you have a Boolean measure like this in place:
+
+ShowValueForDates :=
+VAR LastDateWithData =
+    CALCULATE(
+        MAX(Sales[Order Date]),
+        REMOVEFILTERS()
+    )
+VAR CurrentDate =
+    MIN('Date'[Date])
+RETURN
+    CurrentDate <= LastDateWithData
+
+Variation 1 — Basic QTD (rolling total, no cutoff)
+
+QTD Sales :=
+CALCULATE(
+    [Sales Amount],
+    DATESQTD('Date'[Date])
+)
+Uses DATESQTD() to return all dates in the current quarter up to the current context date.
+
+Does not stop after the last sales date — values will repeat if there are no new sales.
+
+Variation 2 — QTD with cutoff using DATESQTD
+
+QTD Sales V2 :=
+IF(
+    [ShowValueForDates],
+    CALCULATE(
+        [Sales Amount],
+        DATESQTD('Date'[Date])
+    )
+)
+Uses DATESQTD() and applies a cutoff check.
+
+Stops showing values after the last available sales date.
+
+Variation 3 — QTD using TOTALQTD() (rolling total, no cutoff)
+
+QTD Sales using TOTALQTD :=
+TOTALQTD(
+    [Sales Amount],
+    'Date'[Date]
+)
+Equivalent result to DATESQTD().
+
+Simpler syntax.
+
+No cutoff — continues rolling sum after last sale date.
+
+Variation 4 — QTD using TOTALQTD() with cutoff
+
+QTD Sales using TOTALQTD V2 :=
+IF(
+    [ShowValueForDates],
+    TOTALQTD(
+        [Sales Amount],
+        'Date'[Date]
+    )
+)
+Combines TOTALQTD() with cutoff logic.
+
+Prevents display of values beyond last available sales date.
+
+Notes
+DATESQTD() and TOTALQTD() are functionally equivalent; use the one that fits your style or use case.
+
+Apply [ShowValueForDates] condition to control visibility of future rows in reports.
+
+These patterns are reusable across MTD, QTD, YTD with the corresponding DATESMTD, DATESQTD, DATESYTD or TOTALMTD, TOTALQTD, TOTALYTD.
