@@ -1,0 +1,57 @@
+This documentation outlines variations of calculating Prior Year Sales (PY Sales) in DAX, 
+ensuring that comparisons are made only up to the last available sales date — preventing misleading comparisons between partial and full periods.
+
+legacy measure:
+showValueswithsales =
+var max_date_with_sales = max('sales_order'[order_date])
+current_filter_context_date = min('Date'[Date])
+return
+current_filter_context_date <= max_date_with_sales
+
+This returns FALSE for dates after the last recorded sale, preventing any downstream calculations from being evaluated past that point.
+
+✅ Variation 1: Using DATEADD (manual offset)
+
+PY_Sales = 
+IF
+(
+showValueswithsales , 
+CALCULATE( [Sales_amount], CALCULATETABLE( DATEADD('Date'[Date]) , -1 , YEAR ),  date_with_sales = TRUE)
+)
+
+-Shifts current context back 1 year
+
+-Filters only for dates with sales in prior year
+
+-Respects cutoff date from the [ShowValuesWithSales] condition
+
+
+
+Variation 2 using SAMEPERIODLASTYEAR, this will achieve the same result as using DATEADD :
+
+PY_Sales V2 = 
+IF(
+showValueswithsales,
+CALCULATE( [Sales Amount] , CALCULATETABLE(SAMEPERIODLASTYEAR('Date'[Date]) , date_with_sales = TRUE))
+)
+
+-Uses DAX time intelligence to shift to the same period last year
+
+-Adds a sales-activity filter for prior year
+
+-Recommended when using a standard calendar with clean date logic
+
+
+
+Variation 3 not recommended , use carefully :
+This measure as is will calculate the numbers correctly but will not respect when is the last day with sales available so for example if august 2009 has sales until the day 20 ,
+this measure will calculate the PY but the full month so it will not be apples to apples because is a full month vs a partial month , 
+
+CALCULATE([Sales Amount] ,  SAMEPERIODLASTYEAR('Date'[Date]))
+
+Use only if you are guaranteed full data in both years
+
+Always include a cutoff condition like [ShowValuesWithSales] to prevent inaccurate year-over-year comparisons when the current period is incomplete.
+
+Thank you :)
+ 
