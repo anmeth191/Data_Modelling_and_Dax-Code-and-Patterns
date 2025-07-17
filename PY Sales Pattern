@@ -3,7 +3,7 @@ ensuring that comparisons are made only up to the last available sales date — 
 
 legacy measure:
 showValueswithsales =
-var max_date_with_sales = max('sales_order'[order_date])
+var max_date_with_sales = CALCULATE(MAX('sales_order'[order_date]) , REMOVEFILTERS())
 current_filter_context_date = min('Date'[Date])
 return
 current_filter_context_date <= max_date_with_sales
