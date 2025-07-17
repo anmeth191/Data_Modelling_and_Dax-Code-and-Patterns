@@ -1,0 +1,49 @@
+This documentation outlines variations for calculating Prior Quarter Sales (PQ Sales) in DAX.
+The goal is to compare current-period performance with the equivalent period in the previous quarter, 
+while ensuring that comparisons stop at the last known sales date to avoid misleading partial-to-full period analysis.
+
+legacy measure:
+showValueswithsales =
+var max_date_with_sales = CALCULATE(MAX('sales_order'[order_date]) , REMOVEFILTERS())
+current_filter_context_date = min('Date'[Date])
+return
+current_filter_context_date <= max_date_with_sales
+
+This returns FALSE for dates after the last recorded sale, preventing any downstream calculations from being evaluated past that point.
+
+✅ Variation 1: Using DATEADD (manual offset)
+
+PQ_Sales = 
+IF
+(
+showValueswithsales , 
+CALCULATE( [Sales_amount], CALCULATETABLE( DATEADD('Date'[Date]) , -1 ,  QUARTER ),  date_with_sales = TRUE)
+)
+
+Shifts the current filter context back by one quarter
+
+Limits comparison to prior-quarter dates where sales actually occurred
+
+Respects the [ShowValuesWithSales] cutoff to avoid future-looking valuesShifts the current filter context back by one quarter
+
+Limits comparison to prior-quarter dates where sales actually occurred
+
+Respects the [ShowValuesWithSales] cutoff to avoid future-looking values
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+IMPORTANT !!!!!
+
+Why PREVIOUSQUARTER() is Not Recommended Here
+PREVIOUSQUARTER() returns the entire previous quarter, regardless of the current context.
+
+Example:
+
+Current context: August 1–15 (partial month of Q3)
+
+PREVIOUSQUARTER() → April 1–June 30 (full Q2)
+
+This leads to unfair comparisons of a partial period to a full quarter
+
+Use DATEADD(..., -1, QUARTER) instead, which respects the shape of the current time window.
+
+Thank you :)
