@@ -1,5 +1,6 @@
 Quarter-over-Quarter (QoQ) Sales – Absolute Change
-This measure calculates the absolute difference in sales between the current quarter (or partial quarter) and the previous quarter, using a properly filtered prior-quarter measure ([PQ Sales]).
+This measure calculates the absolute difference in sales between the current quarter (or partial quarter) and the previous quarter, 
+using a properly filtered prior-quarter measure ([PQ Sales]).
 
 Measure Definition
 
