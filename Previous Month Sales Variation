@@ -1,0 +1,45 @@
+Previous Month Sales (PM Sales) with Cutoff Logic
+This pattern calculates sales for the previous month, ensuring that the comparison only includes periods where actual sales data exists, 
+and respects the last date of available data to avoid misleading visuals.
+
+Dependencies
+
+Ensure you have:
+[Sales Amount] measure -> SUM(Sales'SalesAmount')
+[DateWithSales] boolean column in your Date table -> Calculated column where 'Date'[Date] <= MAX('Sales'[Order_date])
+[ShowValueForDates] cutoff logic -> var max_order_date_sales = calculate(MAX('Sales'[Order_date]) , removefilters()) 
+                                     var min_date_current_filter = MIN('Date'[Date])
+                                        return 
+                                             min_date_current_filter <= max_order_date_sales 
+                                               //This will return TRUE or FALSE
+
+Measure Definition
+PM Month Sales :=
+VAR define_date_table =
+    CALCULATETABLE(
+        DATEADD('Date'[Date], -1, MONTH),
+        'Date'[DateWithSales] = TRUE
+    )
+RETURN
+    IF(
+        [ShowValueForDates],
+        CALCULATE(
+            [Sales Amount],
+            define_date_table
+        )
+    )
+
+Behavior
+Shifts the current filter context back by one month
+Filters the resulting date range to include only dates with valid sales
+Prevents evaluation past the last available sales date using [ShowValueForDates]
+
+Best Practice
+Avoid using plain PREVIOUSMONTH() unless you're certain that:
+The current month is complete
+The calendar structure is regular
+You’re okay comparing full months blindly
+
+DATEADD(..., -1, MONTH) gives you context-aligned, partial-period-aware comparisons.
+
+
