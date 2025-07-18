@@ -1,0 +1,48 @@
+Smart Time-Aware Comparison.
+
+This pattern creates a single dynamic measure that adjusts automatically based on the time grain visible in the report.
+Instead of creating separate measures for each time level (month, quarter, year), this smart measure uses ISINSCOPE() to detect the current visual level and 
+returns the correct prior-period measure.
+
+Goal
+Automatically return the correct prior-period sales value, whether you're analyzing:
+
+Month-over-Month
+Quarter-over-Quarter
+Year-over-Year
+
+Measure Definition
+
+PP Sales :=
+SWITCH(
+    TRUE(),
+    ISINSCOPE('Date'[Year Month]), [PM Month Sales],
+    ISINSCOPE('Date'[Year Quarter]), [PQ Sales],
+    ISINSCOPE('Date'[Year]), [PY Sales]
+)
+
+Prerequisites
+Your model should include:
+A well-structured Date table with:
+'Date'[Year Month] – e.g., "2023-08"
+'Date'[Year Quarter] – e.g., "2023 Q3"
+'Date'[Year] – e.g., 2023
+
+These measures:
+
+[PM Month Sales] – Previous month sales with cutoff logic
+[PQ Sales] – Previous quarter sales with cutoff logic
+[PY Sales] – Previous year sales with cutoff logic
+
+
+The same can be achieve using other measures for example PY, PM, PQ see measure:
+var PP = SWITCH(TRUE , 
+ ISINSCOPE('Date'[Year Month]) , [PM Sales],
+  ISINSCOPE('Date'[Year Quarter]) , [PQ Sales],
+   ISINSCOPE('Date'[Year]) , [PY Sales]               
+)
+
+A helper like [ShowValueForDates] to prevent future-looking comparisons
+The [PP Sales] measure is the same in every visual, but returns context-aware results.
+
+
