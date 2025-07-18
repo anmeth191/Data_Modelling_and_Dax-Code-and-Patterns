@@ -1,0 +1,21 @@
+Quarter-over-Quarter (QoQ) Sales – Absolute Change
+This measure calculates the absolute difference in sales between the current quarter (or partial quarter) and the previous quarter, using a properly filtered prior-quarter measure ([PQ Sales]).
+
+Measure Definition
+
+QoQ Sales :=
+VAR sales = [Sales Amount]
+VAR previous_pq = [PQ Sales]
+VAR result =
+    IF(
+        NOT ISBLANK(sales) && NOT ISBLANK(previous_pq),
+        sales - previous_pq
+    )
+RETURN
+    result
+🧠 Behavior
+Returns the raw delta between current and prior quarter sales
+
+Avoids misleading output by returning blank if either value is missing
+
+Works with partial periods if [PQ Sales] was defined using the DATEADD pattern with cutoff logic
