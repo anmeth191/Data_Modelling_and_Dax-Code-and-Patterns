@@ -42,4 +42,25 @@ You’re okay comparing full months blindly
 
 DATEADD(..., -1, MONTH) gives you context-aligned, partial-period-aware comparisons.
 
+Now you can use it to calculate Month Over Month:
+
+This DAX measure calculates the absolute change in sales between the current month and the previous month.
+It builds on the [PM Month Sales] (Previous Month Sales) pattern, which includes cutoff logic to ensure accurate comparisons.
+
+Measure Definition
+
+MoM Sales :=
+VAR current_month = [Sales Amount]
+VAR month_previous = [PM Month Sales]
+VAR results =
+    IF(
+        NOT ISBLANK(current_month) && NOT ISBLANK(month_previous),
+        current_month - month_previous
+    )
+RETURN
+    results
+
+Returns the difference in sales between the current and previous month
+Avoids showing misleading deltas by returning BLANK() if either month is missing
+Works cleanly with partial-month logic if [PM Month Sales] uses DATEADD and [ShowValuesWithSales]
 
