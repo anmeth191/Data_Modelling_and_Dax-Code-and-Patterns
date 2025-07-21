@@ -1,0 +1,47 @@
+PYTD Sales – Variation 2 (Using SAMEPERIODLASTYEAR)
+This variation uses SAMEPERIODLASTYEAR to shift the entire Year-To-Date range back one year and applies the current YTD measure to that adjusted date window.
+
+VAR dates_table =
+    CALCULATETABLE(
+        SAMEPERIODLASTYEAR('Date'[Date]),
+        'Date'[DateWithSales] = TRUE
+    )
+VAR result =
+    IF(
+        [ShowValueForDates],
+        CALCULATE([Sales YTD (Simple) Angel], dates_table)
+    )
+RETURN
+    result
+
+Measure Behavior
+SAMEPERIODLASTYEAR returns a date range equal in shape to the current context — just from one year earlier
+
+Filters it further using Calculated Column 'Date'[DateWithSales] = TRUE to eliminate dates that had no sales last year
+
+Applies the [Sales YTD (Simple) Angel] measure over this adjusted date range
+
+Uses [ShowValueForDates] to stop evaluation beyond the last available sales date
+
+Pros & Notes
+
+Aspect	Details
+- Simpler	No need to calculate manual offsets like with DATEADD
+- Context-aware	Respects current YTD range shape
+- Limitation	Must have a fully marked and continuous Date table
+- Assumes	Current context is a valid YTD shape (e.g., using DATESYTD in base measure)
+
+Compare to Variation 1 (Using DATEADD)
+
+Pattern	Function Used	Notes
+PYTD Sales (V1)	DATEADD	More manual control over shifting periods
+PYTD Sales (V2)	SAMEPERIODLASTYEAR	Cleaner when using full YTD periods and default calendars
+
+Only includes PY values up to the corresponding YTD date in 2023 that had sales.
+
+Final Notes
+This variation is best when:
+You're using standard Gregorian calendars
+You want DAX to auto-handle the YTD shape
+You’ve already got clean DateWithSales and ShowValueForDates controls in place
+
