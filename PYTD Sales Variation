@@ -9,8 +9,9 @@ Measure Definition
 
 PYTD Sales :=
 VAR table_date =
-    CALCULATETABLE(
-        DATEADD('Date'[Date], -1, YEAR)
+   CALCULATETABLE(
+        DATEADD('Date'[Date], -1, YEAR),
+        'Date'[DateWithSales] = TRUE
     )
 RETURN
     IF(
@@ -24,7 +25,10 @@ RETURN
 Prerequisites
 Your model should include:
 
-A marked Date table with a unique Date column
+A marked Date table with a unique Date column and Calculated Column DateWithSales
+Calculated_column:
+
+DateWithSales =  'Date'Date <= MAX('Sales'[Order_Date])
 
 [ShowValueForDates] measure to avoid projecting beyond available data
 ShowValueForDates := 
