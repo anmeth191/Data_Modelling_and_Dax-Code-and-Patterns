@@ -1,0 +1,55 @@
+Prior Quarter-To-Date (PQTD) Sales
+This measure calculates Quarter-To-Date sales from the previous quarter, aligned to the shape of the current quarter-to-date in the filter context. 
+It ensures the comparison is fair and avoids extending beyond the last available date with sales.
+
+Measure Definition
+
+PQTD Sales :=
+VAR dates_table =
+    CALCULATETABLE(
+        DATEADD('Date'[Date], -1, QUARTER),
+        'Date'[DateWithSales] = TRUE
+    )
+RETURN
+    IF(
+        [ShowValueForDates],
+        CALCULATE([QTD Sales], dates_table)
+    )
+
+How It Works
+
+DATEADD(..., -1, QUARTER) shifts the current context's date range back one quarter
+CALCULATETABLE(..., 'Date'[DateWithSales] = TRUE) ensures only dates with sales are used (avoids inflating prior quarter results)
+[ShowValueForDates] ensures the measure stops calculating once you're beyond the last available transaction date
+
+Prerequisites
+You need:
+A well-marked Date table
+
+DateWithSales Calculated Column:
+DateWithSales := 'Date'[Date] <= MAX('Sales'[Sales Order])
+
+A [QTD Sales] measure like:
+QTD Sales :=
+CALCULATE([Sales Amount], DATESQTD('Date'[Date]))
+
+A reliable cutoff control like:
+ShowValueForDates :=
+VAR max_date = CALCULATE(MAX('Date'[Date]), REMOVEFILTERS())
+VAR min_date = MIN('Date'[Date])
+RETURN
+    min_date <= max_date
+
+This keeps comparisons fair — same day position in each quarter.
+
+Use Cases
+Quarter-to-date comparisons in dashboards
+Executive KPIs like:
+“How does Q3 so far compare to Q2?”
+“Are we ahead of pace this quarter vs. last?”
+
+Works great in combo with:
+QoQ Delta
+PQ Sales
+Rolling QTD logic
+
