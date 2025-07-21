@@ -1,0 +1,59 @@
+Prior Year-to-Date (PYTD) Sales
+This DAX measure calculates Year-to-Date (YTD) sales from the previous year, based on the current filter context.
+It uses DATEADD to shift the YTD window back one year, enabling accurate Year-over-Year comparisons while respecting the shape and cutoff of the current period.
+
+Goal
+To return the YTD sales total for the same period last year, aligned to the current date range (including partial YTD).
+
+Measure Definition
+
+PYTD Sales :=
+VAR table_date =
+    CALCULATETABLE(
+        DATEADD('Date'[Date], -1, YEAR)
+    )
+RETURN
+    IF(
+        [ShowValueForDates],
+        CALCULATE(
+            [Sales YTD (Simple) Angel],
+            table_date
+        )
+    )
+
+Prerequisites
+Your model should include:
+
+A marked Date table with a unique Date column
+
+[ShowValueForDates] measure to avoid projecting beyond available data
+ShowValueForDates := 
+  var max_date = calculate(max('Date'[Date]) , removefilters())
+    var min_date =  min(Date['Date'])
+      return 
+         min_date <= max_date
+
+An existing YTD measure such as:
+
+Sales YTD (Simple) Angel :=
+
+CALCULATE(
+    [Sales Amount],
+    DATESYTD('Date'[Date])
+)
+
+Ensures fair YTD comparisons even for partial periods
+
+Why It Works
+DATEADD(..., -1, YEAR) shifts the current YTD date range back one year
+
+That shifted table is passed into CALCULATE, applying the same YTD logic from last year
+
+[ShowValueForDates] ensures results only show up to the last current sales date
+
+Use Case
+This measure is essential for:
+YTD vs PYTD variance dashboards
+KPI cards comparing performance to the same point last year
+Time-series visuals where consistent date alignment is critical
+
