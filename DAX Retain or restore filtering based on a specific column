@@ -1,0 +1,46 @@
+Purpose
+This DAX measure calculates sales amounts only by continent, removing the impact of all other filters applied in the visual or report — even when those filters are not present in the visual context.
+
+DAX Code EXAMPLE 
+
+country_sales := 
+CALCULATE(
+    [Sales Amount],
+    REMOVEFILTERS(_sales),
+    VALUES(Dim_country[Continent])
+)
+
+Explanation
+This measure is designed for scenarios where you want to:
+Ignore all filters applied on the fact table _sales (e.g., by product, customer, or time).
+Retain or restore filtering based specifically on the Dim_country[Continent] column.
+
+What this does:
+REMOVEFILTERS(_sales) removes all existing filters from the sales table — even those from visuals, slicers, or cross-filtering.
+VALUES(Dim_country[Continent]) reintroduces the current filter context for Continent, ensuring that the measure respects this dimension alone.
+This gives you full control to evaluate [Sales Amount] by continent only, regardless of what other dimensions exist in the current visual or filter context.
+
+Comparison: ALLEXCEPT vs. This Pattern
+
+CALCULATE([Sales Amount] , 
+ALLEXCEPT(_sales, Dim_country[Continent])  //ALLEXCEPT here works as intended but the column [Continent] must be present in the visual
+)
+
+Comparison 2:
+CALCULATE([Sales Amount], 
+REMOVEFILTERS(_Sales), //remove filters kicks in removing any filter from any column in the visual 
+SUMMARIZE(Dim_country , Dim_country[Continent] )// summarize re-enters a virtual table and this table reactivates the filter for the column in te expression
+)
+)
+
+Keeps filters only if they are already applied.
+If Continent is not in the visual or slicers, no filter is applied for it.
+
+Why REMOVEFILTERS + VALUES is better here
+Restores the filter for Continent even if it is not in the visual.
+More predictable and robust in different report layouts.
+
+When to Use
+You want to show aggregated values grouped only by a specific column, e.g., continent.
+Other dimensions should not influence the result.
+You want reliable behavior even when the visual doesn’t explicitly filter on the retained column.
