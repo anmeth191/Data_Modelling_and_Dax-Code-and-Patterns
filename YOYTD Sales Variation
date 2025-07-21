@@ -1,0 +1,43 @@
+Year-over-Year YTD Sales (YoYTD)
+This measure calculates the absolute delta between current YTD and prior YTD sales, making it possible to track year-to-year momentum up to the same point in time.
+
+Measure Definition
+
+YOYTD Sales :=
+VAR current_YTD_Sales = [Sales YTD (Simple) Angel]
+VAR previous_YTD_Sales = [PYTD Sales]
+VAR results =
+    IF(
+        AND(
+            NOT ISBLANK(current_YTD_Sales),
+            NOT ISBLANK(previous_YTD_Sales)
+        ),
+        current_YTD_Sales - previous_YTD_Sales
+    )
+RETURN
+    results
+
+Behavior
+Returns the delta between current and prior YTD sales
+Avoids returning misleading numbers when either side is missing (BLANK() safe)
+Requires proper definition of both [Sales YTD (Simple) Angel] and [PYTD Sales] (both should include cutoff logic via [ShowValueForDates])
+
+Dependencies
+You must define:
+[Sales YTD (Simple) Angel]:
+
+CALCULATE([Sales Amount], DATESYTD('Date'[Date]))
+[PYTD Sales]:
+
+IF([ShowValueForDates],
+ CALCULATE([Sales YTD (Simple) Angel],
+     DATEADD('Date'[Date], -1, YEAR))
+)
+And a supporting cutoff control like:
+
+ShowValueForDates :=
+VAR max_date = CALCULATE(MAX('Date'[Date]), REMOVEFILTERS())
+VAR min_date = MIN('Date'[Date])
+RETURN min_date <= max_date
+
+Thank you :)
