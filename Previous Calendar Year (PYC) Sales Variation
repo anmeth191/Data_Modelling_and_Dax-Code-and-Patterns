@@ -37,4 +37,54 @@ PARALLELPERIOD ignores filter shape — it just shifts back one full year
 So if you’re looking at YTD in the current year, it’ll pull full prior year, unless controlled
 Use SAMEPERIODLASTYEAR or DATEADD if you want to keep the shape (e.g., up to today only)
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+Variation 2:
+
+This version uses PREVIOUSYEAR instead of PARALLELPERIOD, but the goal is the same:
+Return total sales for the entire prior calendar year, regardless of the current filter shape.
+
+DAX Measure
+
+PYC Sales V2 :=
+IF(
+    [ShowValueForDates],
+    CALCULATE(
+        [Sales Amount],
+        PREVIOUSYEAR('Date'[Date])
+    )
+)
+What PREVIOUSYEAR Does
+PREVIOUSYEAR('Date'[Date]) returns all dates from the previous calendar year
+It doesn’t care if your current visual is filtered to Q1, July, or YTD — it will grab the entire previous year
+It’s functionally very similar to:
+
+PARALLELPERIOD('Date'[Date], -1, YEAR)
+…but easier to read and sometimes performs better in optimized models.
+
+Comparison
+Function	Behavior	Use When...
+PREVIOUSYEAR	Returns full prior calendar year	You want full-year comparison
+PARALLELPERIOD	Shifts current filter by full period (e.g. year)	You need exact period offset
+SAMEPERIODLASTYEAR	Matches shape of filter context (e.g. Jan 1–15 last year)	You're doing partial-period YoY
+
+Pitfall
+If you’re comparing current YTD with PREVIOUSYEAR, be careful:
+
+[Sales Amount] = YTD
+
+PREVIOUSYEAR('Date'[Date]) = full previous year
+This skews the comparison unless you constrain both to the same period shape.
+Best to pair this with a Sales YTD measure for a true YoY apples-to-apples:
+
+PYTD Sales :=
+CALCULATE(
+    [Sales YTD],
+    PREVIOUSYEAR('Date'[Date])
+)
+
+Use Case
+Full-year-over-full-year KPIs
+Executive dashboards where annual totals are needed regardless of filters
+Simple YoY variance logic when exact context shape doesn’t matter
+
 Thank you :)
