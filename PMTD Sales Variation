@@ -1,0 +1,44 @@
+Prior Month-to-Date (PMTD) Sales
+This DAX measure calculates sales for the same range of days in the previous month, matching the current month-to-date shape. It ensures comparisons are accurate by only including dates where sales were present.
+
+DAX Measure
+
+PMTD Sales :=
+VAR date_table =
+    CALCULATETABLE(
+        DATEADD('Date'[Date], -1, MONTH),
+        'Date'[DateWithSales] = TRUE
+    )
+VAR results =
+    IF(
+        [ShowValueForDates],
+        CALCULATE([MTD Sales], date_table)
+    )
+RETURN
+    results
+
+Key Concepts
+DATEADD(..., -1, MONTH) shifts the current MTD range to the prior month
+'Date'[DateWithSales] = TRUE ensures that only prior-month dates with actual sales are included
+[ShowValueForDates] prevents this from returning false results after the last sales date
+
+Dependencies
+MTD Sales example:
+
+MTD Sales :=
+CALCULATE(
+    [Sales Amount],
+    DATESMTD('Date'[Date])
+)
+
+ShowValueForDates:
+
+ShowValueForDates :=
+VAR max_date = CALCULATE(MAX('Date'[Date]), REMOVEFILTERS())
+VAR min_date = MIN('Date'[Date])
+RETURN
+    min_date <= max_date
+
+This shows progress month-over-month, aligned to the same day of the month, not the full month.
+
+Thank you :)
