@@ -1,0 +1,45 @@
+Month-over-Month-To-Date (MoMTD) Sales Delta
+This DAX measure calculates the difference between current MTD and prior MTD sales, allowing you to track monthly performance progression up to the current day of the month.
+
+DAX Measure
+
+MoMTD Sales :=
+VAR current_mtd_sales = [MTD Sales]
+VAR previous_mtd_sales = [PMTD Sales]
+VAR results =
+    IF(
+        NOT ISBLANK(current_mtd_sales) &&
+        NOT ISBLANK(previous_mtd_sales),
+        current_mtd_sales - previous_mtd_sales
+    )
+RETURN
+    results
+
+What It Does
+Compares this month’s sales (up to today’s date) against the same number of days in the previous month
+
+Avoids misleading visuals by guarding with ISBLANK() checks
+Provides a clean delta value — no percentage noise, just the real $ or volume change
+
+Dependency Measures
+[MTD Sales] based on DATESMTD('Date'[Date])
+[PMTD Sales] as shown earlier using DATEADD(..., -1, MONTH)
+[ShowValueForDates] to ensure cutoffs work after last sale
+
+Optional: MoMTD % Growth
+
+MoMTD % Growth :=
+VAR current = [MTD Sales]
+VAR previous = [PMTD Sales]
+RETURN
+    IF(
+        NOT ISBLANK(current) && NOT ISBLANK(previous),
+        DIVIDE(current - previous, previous)
+    )
+
+Use Cases
+Daily-updated dashboards with real-time pacing
+Executive reports showing if the month is trending better/worse than last
+Visuals showing both deltas and % shifts for performance tracking
+
+Thank you :)
