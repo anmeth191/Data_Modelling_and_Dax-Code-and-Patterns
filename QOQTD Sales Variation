@@ -1,0 +1,62 @@
+Quarter-over-Quarter-To-Date (QoQTD) Sales
+This measure calculates the difference between current quarter-to-date sales and the previous quarter’s equivalent period, enabling clean visibility into quarterly momentum and short-term growth trends.
+
+DAX Measure
+
+QoQTD Sales :=
+VAR current_sales_qtd = [QTD Sales]
+VAR previous_sales_qtd = [PQTD Sales]
+VAR result =
+    IF(
+        NOT ISBLANK(current_sales_qtd) && NOT ISBLANK(previous_sales_qtd),
+        current_sales_qtd - previous_sales_qtd
+    )
+RETURN
+    result
+
+How It Works
+[QTD Sales] should be based on DATESQTD with optional cutoff via [ShowValueForDates]
+[PQTD Sales] must shift the date context back one quarter (typically using DATEADD(..., -1, QUARTER))
+Handles BLANK() defensively to avoid noise in visual totals or incorrect comparisons
+
+Dependencies
+QTD Sales example:
+
+QTD Sales :=
+CALCULATE(
+    [Sales Amount],
+    DATESQTD('Date'[Date])
+)
+
+PQTD Sales:
+PQTD Sales :=
+VAR dates_table =
+    CALCULATETABLE(
+        DATEADD('Date'[Date], -1, QUARTER),
+        'Date'[DateWithSales] = TRUE
+    )
+RETURN
+    IF(
+        [ShowValueForDates],
+        CALCULATE([QTD Sales], dates_table)
+    )
+
+This gives a true apples-to-apples delta, only comparing as far into each quarter as valid data allows.
+
+Optional: % Growth Version
+
+QoQTD % Growth :=
+VAR current = [QTD Sales]
+VAR previous = [PQTD Sales]
+RETURN
+    IF(
+        NOT ISBLANK(current) && NOT ISBLANK(previous),
+        DIVIDE(current - previous, previous)
+    )
+
+Use Case
+Executive dashboards comparing performance across quarters
+KPI cards for “QoQTD Variance”
+Alerts or trend charts to monitor drops or gains early in a quarter
+
+Thank you :)
