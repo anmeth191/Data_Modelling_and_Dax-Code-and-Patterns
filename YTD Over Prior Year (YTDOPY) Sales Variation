@@ -1,0 +1,44 @@
+YTD Over Prior Year (YTDOPY) Sales
+This DAX pattern compares the current year-to-date sales to the entire previous calendar year’s sales, providing visibility into how the current year is pacing against last year in total.
+
+DAX Measure
+
+YTDOPY Sales :=
+VAR current_period_ytd = [Sales YTD (Using flag) Angel]
+VAR previous_period = [PYC Sales]
+VAR result =
+    IF(
+        NOT ISBLANK(current_period_ytd) &&
+        NOT ISBLANK(previous_period),
+        current_period_ytd - previous_period
+    )
+RETURN
+    result
+
+What It Does
+[Sales YTD (Using flag) Angel] is your current YTD sales logic — typically using DATESYTD or a custom flag-based approach
+[PYC Sales] retrieves the total from the entire prior calendar year
+
+It compares how far the current year has come relative to last year's full total
+Guards against BLANK() to avoid misleading visuals
+
+Useful for understanding “are we on track to outperform last year?” even before the current year is complete.
+
+Business Caveat
+This is not a clean apples-to-apples unless you’re at year-end — so it's best used for:
+
+Trend pacing visuals
+Early warning signals
+Strategic dashboards where "progress vs goal" matters more than strict equivalency
+
+If you want true YTD vs YTD, use [PYTD Sales] instead:
+
+YoYTD Sales :=
+[Sales YTD] - [PYTD Sales]
+
+Use Cases
+Executive or CFO dashboards
+Comparing in-year performance to last year's benchmark
+Tracking run-rate vs last year in pacing visualizations
+
+Thank you :)
