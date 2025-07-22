@@ -1,0 +1,40 @@
+Previous Calendar Year (PYC) Sales
+This measure compares current period sales against the entire previous calendar year, using PARALLELPERIOD to shift the context back one full year, regardless of shape or filter depth.
+
+DAX Measure
+
+PYC Sales :=
+IF(
+    [ShowValueForDates],
+    CALCULATE(
+        [Sales Amount],
+        PARALLELPERIOD('Date'[Date], -1, YEAR)
+    )
+)
+
+What It Does
+PARALLELPERIOD(..., -1, YEAR) shifts the filter context back by exactly one year
+It preserves the shape of the context (month, quarter, year total — whatever you're looking at)
+Works well for full-year-over-year comparisons
+[ShowValueForDates] ensures you're not evaluating past the last valid sales date
+
+PARALLELPERIOD vs SAMEPERIODLASTYEAR
+
+Function	Behavior
+SAMEPERIODLASTYEAR	Keeps same shape across years (e.g., Jan 1–15 last year if Jan 1–15 is selected now)
+PARALLELPERIOD	Shifts filter context back exactly one full period, regardless of visual context
+DATEADD(..., -1, YEAR)	More flexible, can work with irregular periods or handle non-standard calendars
+
+Use Case
+Use this measure when:
+
+You want calendar year over calendar year comparison
+You don’t want to limit to YTD or partial months
+You're showing totals in KPI cards, bar charts, or annual performance reports
+
+Caution
+PARALLELPERIOD ignores filter shape — it just shifts back one full year
+So if you’re looking at YTD in the current year, it’ll pull full prior year, unless controlled
+Use SAMEPERIODLASTYEAR or DATEADD if you want to keep the shape (e.g., up to today only)
+
+Thank you :)
