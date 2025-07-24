@@ -1,0 +1,43 @@
+ Fiscal YTD Over Prior Fiscal Year (Fiscal YTDOPY) Sales
+This measure compares the current Fiscal Year-To-Date (FYTD) sales against the entire prior fiscal year, giving an early view of how the current year is pacing vs last year.
+
+DAX Measure
+
+Fiscal YTDOPY Sales :=
+VAR current_fiscal_year = [Fiscal YTD Sales]
+VAR previous_fy = [Fiscal PYC Sales]
+RETURN
+    IF(
+        NOT ISBLANK(current_fiscal_year) &&
+        NOT ISBLANK(previous_fy),
+        current_fiscal_year - previous_fy
+    )
+
+What It Does
+[Fiscal YTD Sales] → current sales up to today in the fiscal year (e.g., Jul 1 – today)
+[Fiscal PYC Sales] → entire previous fiscal year (e.g., Jul 1 last year – Jun 30 this year)
+
+Returns the delta between both
+This is a trend pacing metric:
+"How far along are we this fiscal year compared to last year's total?"
+
+Business Caveat
+This is not apples-to-apples unless you're at or near fiscal year-end.
+
+If you're in Q1 of the fiscal year:
+The current YTD is low
+The prior year total is complete
+Result will be negative until you catch up
+
+This is expected and used to gauge run-rate or performance pacing
+
+Example
+Current Date	Fiscal YTD Sales	Fiscal PYC Sales	YTDOPY
+Sep 30	$1,000,000	$4,200,000	-$3,200,000
+Jan 15	$2,750,000	$4,200,000	-$1,450,000
+Jun 30	$4,300,000	$4,200,000	$100,000
+
+Use Cases
+Performance pacing: "Are we on track to beat last year?"
+High-level dashboards for execs and CFOs
+Alerts when YTD is behind prior full year by too much
