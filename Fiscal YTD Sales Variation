@@ -1,0 +1,47 @@
+Fiscal Year-To-Date (FYTD) Sales
+This measure calculates Year-To-Date sales based on a custom fiscal year end, not the default December 31st.
+It ensures that your time intelligence aligns with business calendars — such as July–June or April–March fiscal years.
+
+DAX Measure
+
+Fiscal YTD Sales :=
+IF(
+    [ShowValueForDates],
+    CALCULATE(
+        [Sales Amount],
+        DATESYTD('Date'[Date], "06-30")
+    )
+)
+
+What It Does
+DATESYTD('Date'[Date], "06-30") tells DAX:
+"My fiscal year ends on June 30th", so:
+
+July 1st starts the new fiscal year
+
+June 30th ends it
+
+CALCULATE([Sales Amount], DATESYTD(...)) scopes the sales to just those dates within the current fiscal year up to the current date
+
+[ShowValueForDates] guards against miscalculations past your last valid sales date
+
+Use Cases
+Businesses whose financial calendars don’t align with Jan–Dec
+Quarterly reports where fiscal quarters don’t match calendar quarters
+Organizations that plan, budget, or bonus based on fiscal results
+
+Tips & Best Practices
+The "MM-DD" string in DATESYTD must match the fiscal year end date, not the start
+
+Safeguard Measure
+Still use this with [ShowValueForDates] or [DateWithSales] to prevent misleading values past your actual data range.
+ShowValueForDates = 
+var max_date_with_sales = CALCULATE( 
+                                   MAX('Sales'[Order Date]), 
+                                         REMOVEFILTERS())
+var current_filter_context_date = MIN('Date'[Date])
+return 
+current_filter_context_date <= max_date_with_sales
+
+Thank you :)
+
