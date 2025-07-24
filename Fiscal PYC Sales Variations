@@ -1,0 +1,52 @@
+Fiscal Prior Year Calendar (Fiscal PYC) Sales
+This measure calculates sales for the entire previous fiscal year, based on a custom fiscal year-end (in this case, June 30). 
+It allows clean full-year-over-full-year comparisons when the business doesn’t operate on a Jan–Dec calendar.
+
+DAX Measure
+Fiscal PYC Sales :=
+IF(
+    [ShowValueForDates],
+    CALCULATE(
+        [Sales Amount],
+        PREVIOUSYEAR('Date'[Date], "06-30")
+    )
+)
+
+How It Works
+PREVIOUSYEAR('Date'[Date], "06-30") returns all dates in the previous fiscal year, ending June 30.
+
+If today is July 15, 2024 → This will pull from July 1, 2022 – June 30, 2023
+
+CALCULATE([Sales Amount], ...) evaluates total sales during that prior fiscal year window
+
+IF([ShowValueForDates], …) ensures nothing is evaluated past the latest known sales date
+
+Comparison of Time Functions
+Function	Returns
+PREVIOUSYEAR('Date'[Date])	Calendar: Jan 1–Dec 31 of prior year
+PREVIOUSYEAR('Date'[Date], "06-30")	Fiscal: Jul 1–Jun 30 of prior fiscal year
+PARALLELPERIOD(..., -1, YEAR)	Full period back (ignores fiscal context)
+
+Use Cases
+Comparing this fiscal year vs last fiscal year
+Dashboards where business runs on non-calendar year
+Executive or financial summary views requiring total prior-year benchmarks
+
+Supporting Measures
+Make sure you’ve already defined:
+
+ShowValueForDates :=
+VAR max_date =
+    CALCULATE(MAX('Sales'[Order Date]), REMOVEFILTERS())
+VAR current_context_date = MIN('Date'[Date])
+RETURN
+    current_context_date <= max_date
+And optionally:
+
+Fiscal YTD Sales :=
+IF(
+    [ShowValueForDates],
+    CALCULATE([Sales Amount], DATESYTD('Date'[Date], "06-30"))
+)
+
+Thank you :)
