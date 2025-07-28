@@ -1,0 +1,61 @@
+This measure compares the current quarter against the entire previous quarter, regardless of the current date. It pulls total sales from the previous quarter as a fixed reference point.
+
+DAX Measure
+
+PQC Sales :=
+IF(
+    [ShowValueForDates] &&
+    HASONEVALUE('Date'[Year Quarter]),
+    CALCULATE(
+        [Sales Amount],
+        PARALLELPERIOD('Date'[Date], -1, QUARTER)
+    )
+)
+
+What It Does
+PARALLELPERIOD(..., -1, QUARTER) returns the entire prior quarter relative to the current filter context
+
+HASONEVALUE('Date'[Year Quarter]) ensures this only triggers when exactly one quarter is selected (avoids ambiguity or overaggregation)
+
+[ShowValueForDates] keeps the logic clean — avoids returning values past the last sales date
+
+CALCULATE(...) wraps the logic to apply the filter and return the actual prior quarter's sales
+
+Compare to Other Patterns
+
+Pattern	Returns	Use When
+PQ Sales	Prior quarter, filter-respecting	Shape-aware, partial comparisons
+PQC Sales	Full previous quarter total	Executive KPI, full period compare
+PREVIOUSQUARTER	Same as PARALLELPERIOD (simpler)	For full quarters only
+
+Use Cases
+Quarter-over-quarter trend visuals
+Dashboards where the current quarter may be incomplete, but you still want to see how it stacks up
+Benchmarking full-quarter totals in time series visuals
+
+Best Practices
+Always use HASONEVALUE('Date'[Year Quarter]) to avoid incorrect rollups (like Year totals showing quarter-level logic)
+Make sure 'Date'[Year Quarter] exists as a clean, unique field (e.g., "2024 Q3")
+Avoid this in day-level visuals — it won’t behave predictably unless scoped to one quarter
+
+Depencies
+[ShowValueForDates]
+This helper measure ensures calculations stop at the last available sales date, avoiding inflated totals when the current period continues past the real data.
+
+ShowValueForDates :=
+VAR max_date_sales =
+    CALCULATE(
+        MAX('Sales_Order'[Order_Date]),
+        REMOVEFILTERS()
+    )
+VAR current_filter_context =
+    MIN('Date'[Date])
+RETURN
+    current_filter_context <= max_date_sales
+
+Purpose
+Returns TRUE if the current date being evaluated is on or before the latest sales transaction
+Returns FALSE for dates after the last recorded sale
+Can be used to short-circuit measures and prevent misleading values beyond the known dataset
+
+Thank you :)
