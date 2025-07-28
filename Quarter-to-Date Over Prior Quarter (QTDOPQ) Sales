@@ -1,0 +1,49 @@
+This measure compares the current quarter-to-date (QTD) sales against the total sales of the previous full quarter, helping assess how well the current quarter is shaping up.
+
+DAX Measure
+
+QTDOPQ Sales :=
+VAR currentQuarter = [Sales QTD]
+VAR fullpreviousQuarter = [PQC Sales]
+VAR result =
+    IF(
+        NOT ISBLANK(currentQuarter) &&
+        NOT ISBLANK(fullpreviousQuarter),
+        currentQuarter - fullpreviousQuarter
+    )
+RETURN
+    result
+
+What It Does
+[Sales QTD]  sales from the beginning of the current quarter up to today
+[PQC Sales]  total sales of the entire prior quarter (not just up to a matching date)
+
+Returns the difference to assess quarter pacing
+
+Example Output
+
+Date (Q3)	QTD Sales	PQC Sales (Q2)	QTDOPQ
+Jul 15	$1,050,000	$2,300,000	-$1,250,000
+Aug 30	$2,200,000	$2,300,000	-$100,000
+Sep 30	$3,050,000	$2,300,000	$750,000
+
+Use Cases
+Mid-quarter pacing: “Are we outperforming last quarter so far?”
+Visual trends with growth or slowdown indicators
+Early detection of quarter-over-quarter momentum
+
+Caveats
+This is not an apples-to-apples date comparison — it’s partial vs full
+Expect negative values early in the quarter — that’s normal
+Don’t use for financial close unless quarter is complete
+
+Related Patterns
+QoQC Sales — Current Quarter vs Prior Quarter
+QTD vs PQTD — Apples-to-apples same-length comparison
+
+Last calculation to know the Growth %
+
+QTD Growth % →
+DIVIDE([Sales QTD] - [PQC Sales], [PQC Sales])
+
+Thank you :)
