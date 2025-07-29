@@ -1,0 +1,40 @@
+This measure calculates the delta between the current MTD and the full previous month's sales, useful when analyzing partial vs. full periods.
+
+MTDOPM Sales = 
+VAR current_mtd = [Sales MTD]
+VAR fullpreviousmonth = [PMC Sales]
+VAR results = 
+    IF(
+        NOT ISBLANK(current_mtd) && NOT ISBLANK(fullpreviousmonth),
+        current_mtd - fullpreviousmonth
+    )
+RETURN
+    results
+
+
+[Sales MTD] → Current month's accumulated sales up to the latest visible date
+[PMC Sales] → Full previous month's total sales, using PARALLELPERIOD(..., -1, MONTH)
+
+Dependencies:
+Make sure [PMC Sales] is correctly defined like this:
+
+PMC Sales = 
+IF(
+    [ShowValueForDates] && HASONEVALUE('Date'[Month]),
+    CALCULATE([Sales Amount], PARALLELPERIOD('Date'[Date], -1, MONTH))
+)
+
+And your filter safeguard measure:
+
+ShowValueForDates = 
+VAR max_date_sales = CALCULATE(MAX('Sales'[Order Date]), REMOVEFILTERS())
+VAR current_filter_context = MIN('Date'[Date])
+RETURN
+    current_filter_context <= max_date_sales
+
+Use Case:
+This pattern is especially helpful when:
+You're mid-month and want to benchmark against last month's full performance
+You need to detect trends or growth during the month as data accumulates
+
+Thank you :)
