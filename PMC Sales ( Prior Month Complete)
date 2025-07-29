@@ -13,6 +13,18 @@ IF(
     )
 )
 
+Variation 2:
+PMC Sales :=
+IF(
+    [ShowValueForDates] &&
+    HASONEVALUE('Date'[Month]),
+    CALCULATE(
+        [Sales Amount],
+        PREVIOUSMONTH('Date'[Date])
+    )
+)
+
+
 What It Does
 PARALLELPERIOD(..., -1, MONTH) returns the entire month that came before the one currently in context.
 HASONEVALUE('Date'[Month]) ensures the measure only evaluates when exactly one month is selected (avoids incorrect aggregation at higher levels).
@@ -42,5 +54,10 @@ Make sure to have the Measure ShowValuesForDates :=
 
 This guard clause ensures that any time-based comparison measure (like PMC Sales) only evaluates up to the last known sales transaction date — preventing inflated
 or misleading values after the data ends.
+
+Recommendation:
+
+Use PREVIOUSMONTH if you're only comparing months and want simpler syntax.
+Use PARALLELPERIOD if you’re writing more generalized time-shift logic (month, quarter, year) with one consistent function.
 
 Thank you :)
