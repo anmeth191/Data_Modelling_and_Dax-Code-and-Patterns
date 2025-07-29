@@ -1,0 +1,54 @@
+Difference of HASONEVALUE vs SELECTEDVALUE 
+
+HASONEVALUE('Product'[Color]) returns TRUE if the current filter context contains exactly one distinct value from the 'Product'[Color] column.
+It returns FALSE if there are multiple or zero distinct values in that context.
+
+Example 1 – No slicer applied (all colors visible):
+
+Color	Result
+Red	TRUE
+Green	TRUE
+Blue	TRUE
+Black	TRUE
+White	TRUE
+Total	FALSE → Because the total row sees all colors, not just one.
+
+Example 2 – Slicer filters to only "Blue":
+Color	Result
+Blue	TRUE
+Total	TRUE → Because both the row and total see only one distinct value in context.
+
+Summary
+Each row in a visual gets its own row-level filter context, so HASONEVALUE usually returns TRUE at the row level.
+
+The total row uses the broader context, which includes all visible values unless a slicer limits it.
+If that context has only one value (e.g., slicer set to "Blue") → total returns TRUE.
+Otherwise → total returns FALSE.
+
+SELECTEDVALUE 
+
+SELECTEDVALUE is similar to HASONEVALUE, but it serves a different purpose.
+Instead of returning a boolean, SELECTEDVALUE('Product'[Color]) returns the actual value selected in the current filter context — but only if exactly one distinct value is present.
+If there are multiple values or none, it returns BLANK() by default, unless a fallback value is provided.
+
+Examples:
+Selection	SELECTEDVALUE('Product'[Color])
+Only "Blue" selected	"Blue"
+"Red" and "Blue" selected	BLANK()
+Nothing selected	BLANK()
+"Red" selected, fallback provided	"Red"
+Multiple selected, fallback given	"Multiple values" (if coded)
+
+Example with fallback:
+
+SELECTEDVALUE('Product'[Color], "Multiple values")
+This will return:
+
+"Red" if one color is selected
+"Multiple values" if more than one or none is selected
+
+Summary
+Use SELECTEDVALUE when you want to retrieve the actual value in context
+Use HASONEVALUE when you want to test whether the context contains exactly one value
+
+Thank you :) 
