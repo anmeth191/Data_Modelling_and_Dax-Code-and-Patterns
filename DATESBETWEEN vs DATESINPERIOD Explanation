@@ -1,0 +1,52 @@
+Both return a table of dates, and both are used for time intelligence, but they behave very differently in how they define the date range.
+
+DATESBETWEEN
+
+DATESBETWEEN(<dates>, <start_date>, <end_date>)
+You explicitly give it a start and end date.
+It returns all dates in that range (inclusive).
+Good for fixed comparisons (e.g., YTD, MTD, custom ranges).
+
+Example:
+
+SalesYTD :=
+CALCULATE(
+    [Sales Amount],
+    DATESBETWEEN('Date'[Date], DATE(YEAR(TODAY()),1,1), MAX('Date'[Date]))
+)
+
+DATE(YEAR(TODAY()),1,1) - Starts from 2025, 01 , 01 
+MAX('Date'[Date]) - the last date in the current filter context
+
+so in summary Returns all sales from Jan 1 to the current date (YTD logic).
+
+DATESINPERIOD
+
+DATESINPERIOD(<dates>, <end_date>, <number_of_intervals>, <interval>)
+
+You give it an ending date, and then tell it how far to look back (or forward).
+It returns a rolling window of dates.
+Perfect for Moving Averages, MAT, or trailing periods.
+
+Example:
+
+MAT Sales :=
+CALCULATE(
+    [Sales Amount],
+    DATESINPERIOD('Date'[Date], MAX('Date'[Date]), -1, YEAR)
+)
+Returns sales from the last 12 months ending at the latest visible date.
+
+Side-by-Side Summary
+
+Feature 	           DATESBETWEEN	                          DATESINPERIOD
+Input Style	       Start and end date	               End date and interval (e.g., -12 months)
+Range Type         Fixed window	                     Rolling window
+Use Case	         YTD, MTD, QTD, static periods	   MAT, trailing 30 days, rolling 13 weeks, etc.
+Flexibility	       Less dynamic (but precise)	       Very dynamic, moves with current date context
+
+Final Take:
+Use DATESBETWEEN when you know exact start and end dates.
+Use DATESINPERIOD when you want a rolling period anchored to the current context.
+
+Thank you : )
