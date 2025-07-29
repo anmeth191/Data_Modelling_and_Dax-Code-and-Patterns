@@ -1,0 +1,46 @@
+ Prior Month Complete (PMC) Sales
+This measure compares the current period’s performance against the full previous month, using PARALLELPERIOD to pull the entire month prior to the one currently in context.
+
+DAX Measure
+
+PMC Sales :=
+IF(
+    [ShowValueForDates] &&
+    HASONEVALUE('Date'[Month]),
+    CALCULATE(
+        [Sales Amount],
+        PARALLELPERIOD('Date'[Date], -1, MONTH)
+    )
+)
+
+What It Does
+PARALLELPERIOD(..., -1, MONTH) returns the entire month that came before the one currently in context.
+HASONEVALUE('Date'[Month]) ensures the measure only evaluates when exactly one month is selected (avoids incorrect aggregation at higher levels).
+[ShowValueForDates] acts as a safety switch to prevent evaluation past the latest available sales date.
+
+Compare to Other MoM Patterns
+Pattern	Behavior	Use Case
+[PM Sales]	Shape-aware (matches current context range)	Apples-to-apples day-by-day comparison
+[PMC Sales]	Full previous month total	Executive dashboards, pacingPREVIOUSMONTH	Also full prior month	Simpler syntax, but same behavior
+
+Use Cases
+MoM full-period benchmarking
+KPI cards or scorecards where users expect fixed monthly totals
+Comparing a partial current month vs a complete previous month
+
+Considerations
+Not apples-to-apples in early month stages → use only when full-month comparisons are acceptable
+Use HASONEVALUE to prevent accidental over-aggregation (e.g., when multiple months are selected)
+
+Dependencies: 
+
+Make sure to have the Measure ShowValuesForDates :=
+     var max_sales_date = calculate(max('Sales'[Order Sales]) , removefilters())
+      var current_filter_context = min('Date'[Date])
+        return 
+          current_filter_context <= max_sales_date
+
+This guard clause ensures that any time-based comparison measure (like PMC Sales) only evaluates up to the last known sales transaction date — preventing inflated
+or misleading values after the data ends.
+
+Thank you :)
