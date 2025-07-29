@@ -1,0 +1,83 @@
+(Moving Annual Total — trailing 12 months of sales)
+
+MAT Sales =
+CALCULATE(
+    [Sales Amount],
+    DATESINPERIOD(
+        'Date'[Date],
+        MAX('Date'[Date]),
+        -1,
+        YEAR
+    )
+)
+
+Explanation:
+MAX('Date'[Date]) → Anchors the period ending at the last visible date in the current filter context.
+DATESINPERIOD(..., -1, YEAR) → Returns a 12-month window ending at the current date, moving dynamically based on slicers or visuals.
+CALCULATE(...) → Aggregates [Sales Amount] over that dynamic 12-month range.
+
+This gives you a rolling 12-month total, updated automatically for the context.
+
+Use Case:
+Financial statements (income, revenue, expense tracking)
+Smoothing seasonality — better than YTD in many business reviews
+Comparing consistent trailing periods
+
+Tip:
+If you're using a DateWithSales or ShowValueForDates safeguard, you can enhance the measure like this:
+
+MAT Sales :=
+IF(
+    [ShowValueForDates],
+    CALCULATE(
+        [Sales Amount],
+        DATESINPERIOD('Date'[Date], MAX('Date'[Date]), -1, YEAR)
+    )
+)
+This ensures you don’t show rolling totals beyond the last actual sale — which avoids bloated visuals and misleading data.
+
+Summary:
+DATESINPERIOD is one of the most flexible date functions — you can shift by day, month, quarter, year.
+Unlike SAMEPERIODLASTYEAR, this does not need aligned calendar years — it just counts backwards in time from a reference date.
+
+IMPORTANT DISTINCTION: MAT ≠ YTD
+
+YTD is anchored to the start of the calendar or fiscal year.
+MAT is a rolling window of the last 12 months, regardless of year boundaries.
+
+Behavior in Context:
+At the start of the year, MAT and YTD might look very similar — both summing sales from January to the current month.
+But once the year rolls over, the difference becomes clear:
+
+Example: Current month is July 2025
+YTD Sales will calculate from:
+Jan 1, 2025 → July 31, 2025
+
+MAT Sales will calculate from:
+Aug 1, 2024 → July 31, 2025
+(rolling 12-month window — not bound to the new year)
+
+Under the Hood – What MAT does:
+DATESINPERIOD creates a virtual table of dates going back 12 months from the current max visible date. So if you're in July 2025, MAT will internally evaluate:
+
+July 2025  
+June 2025  
+May 2025  
+April 2025  
+March 2025  
+February 2025  
+January 2025  
+December 2024  
+November 2024  
+October 2024  
+September 2024  
+August 2024 ← oldest month in the window
+
+Whereas YTD will only look at:
+January 2025 → July 2025
+Final Take:
+Use YTD for goal tracking within a fiscal/calendar year.
+Use MAT when you need trend analysis, especially when seasonality matters.
+They may align for a few months, but their behavior will diverge over time.
+
+Thank you : )
