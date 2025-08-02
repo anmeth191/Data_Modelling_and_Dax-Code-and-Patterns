@@ -1,0 +1,38 @@
+Calculates the absolute difference between the current Moving Annual Total and the prior year's MAT, enabling clear YoY trailing performance analysis.
+
+This is the delta, not the % — useful for execs who want to know how much more or less was sold in the last 12 months compared to the prior year.
+
+MATG Sales :=
+VAR current_mat = [Sales MAT]
+VAR previous_mat = [PYMAT Sales]
+VAR result =
+    IF(
+        NOT ISBLANK(current_mat) && NOT ISBLANK(previous_mat),
+        current_mat - previous_mat
+    )
+RETURN
+    result
+
+
+
+Dependencies
+
+You need:
+[Sales MAT] → Current rolling 12-month sales
+CALCULATE([Sales Amount]  , DATESINPERIOD(Date[Date] , MAX(Date[Date]) , -12 , MONTH))
+
+[PYMAT Sales] → Prior year rolling 12-month sales
+CALCULATE( [Sales MAT] ,  DATEADD(Date[Date]  , -12, MONTH ))
+
+[ShowValueForDates] → Boolean control for visual cleanliness
+var max_date = CALCULATE(MAX(Sales[Order Date]) , REMOVEFILTERS())
+var current_date = MIN(Date[Date])
+return
+current_date <= max_date
+
+Business Value
+Tracks performance trends beyond static fiscal/calendar year boundaries.
+Highlights whether trailing 12-month sales are growing or shrinking.
+Avoids misleading snapshots by considering rolling behavior.
+
+MATG% Sales → % growth based on this delta (can be added as next pattern)
