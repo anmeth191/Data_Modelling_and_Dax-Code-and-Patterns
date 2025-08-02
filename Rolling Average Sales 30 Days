@@ -1,0 +1,58 @@
+This measure calculates a 30-day moving average of sales, restricted to dates with actual transactions. 
+It prevents inaccurate averages on incomplete periods — especially important at the beginning of your dataset.
+
+Scenario for Understanding
+Assume:
+The first transaction was recorded on March 1, 2018
+The current filter context date is August 1, 2025
+This context is key to understanding how the virtual table behaves.
+
+🧮 DAX Code
+
+30_Days_Sales_AVG :=
+VAR Thirty_days_period =
+    // Virtual table: July 2, 2025 to August 1, 2025
+    CALCULATETABLE(
+        DATESINPERIOD('Date'[Date], MAX('Date'[Date]), -30, DAY),
+        'Date'[DateWithSales] = TRUE
+    )
+
+VAR first_day_with_data =
+    // First recorded transaction, e.g., March 1, 2018
+    CALCULATE(MIN(Sales[Order Date]), REMOVEFILTERS())
+
+VAR first_day_in_period =
+    // Minimum date from the virtual table → July 2, 2025
+    MINX(Thirty_days_period, 'Date'[Date])
+
+VAR result =
+    // Proceed only if dataset has data before or at the window start
+    IF(
+        first_day_with_data <= first_day_in_period,
+        AVERAGEX(Thirty_days_period, [Sales Amount])
+    )
+
+RETURN result
+
+Variable Breakdown
+Variable	Description
+Thirty_days_period	Builds a virtual table for the last 30 days (July 2 → August 1, 2025), restricted to dates with actual sales.
+first_day_with_data	Retrieves the earliest order date in the dataset (e.g., March 1, 2018), ignoring filters.
+first_day_in_period	Gets the start date of the 30-day window, e.g., July 2, 2025.
+result	Only returns a value if the full window is within the available data history.
+
+Example Evaluation
+
+With MAX(Date[Date]) = August 1, 2025:
+DATESINPERIOD(...) → returns July 2 to August 1, 2025
+first_day_with_data → March 1, 2018
+first_day_in_period → July 2, 2025
+Since 2018-03-01 <= 2025-07-02, the 30-day window is valid
+AVERAGEX executes across the 30-day period
+
+Why It Matters
+Avoids calculating averages on incomplete rolling windows
+Reflects true 30-day performance only when full data is available
+Easily extended to rolling 7, 60, or 90 days (just change the -30)
+
+Thank you :)
