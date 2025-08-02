@@ -1,0 +1,43 @@
+This measure calculates the Moving Annual Total (MAT) for the same rolling window one year prior.
+It enables apples-to-apples comparisons of trailing performance between this year and the prior year.
+
+PYMAT Sales :=
+IF(
+    [ShowValueForDates],
+    CALCULATE(
+        [Sales MAT],
+        DATEADD('Date'[Date], -1, YEAR)
+    )
+)
+
+How it Works
+DATEADD('Date'[Date], -1, YEAR) shifts the current filter context exactly one year back.
+[Sales MAT] is then calculated over that new time window — effectively returning the MAT from the prior year.
+Wrapping the logic in IF([ShowValueForDates]) prevents inaccurate values after the last sales date.
+
+Use Case
+Ideal for:
+-Executive dashboards
+-Year-over-year rolling performance
+-Sales trend analysis
+-Revenue growth tracking
+
+Prerequisites
+You must already have:
+
+A working [Sales MAT] measure = 
+CALCULATE(
+    [Sales Amount],
+    DATESINPERIOD('Date'[Date], MAX('Date'[Date]), -12, MONTH)
+)
+
+A [ShowValueForDates] Boolean control measure (used to hide values after the last available sales date)
+
+ShowValueForDates :=
+VAR max_sales_date = CALCULATE(MAX('Sales'[Order Date]), REMOVEFILTERS())
+VAR current_context = MIN('Date'[Date])
+RETURN
+current_context <= max_sales_date
+
+Thank you :)
+
