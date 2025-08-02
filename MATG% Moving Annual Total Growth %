@@ -1,0 +1,34 @@
+This measure returns the percentage growth of sales over a trailing 12-month window, compared to the same rolling window one year earlier.
+
+Measure Code
+MATG % Sales :=
+DIVIDE(
+    [MATG Sales],
+    [PYMAT Sales]
+)
+
+How it Works
+[MATG Sales] gives you the absolute change between this year’s MAT and the prior year’s MAT.
+[PYMAT Sales] provides the base value for comparison.
+DIVIDE() handles safe division, returning blank if denominator is zero (instead of an error).
+
+Business Value
+This is the KPI that stakeholders care about:
+“Are we up or down vs. last year?”
+“By what percentage?”
+
+It allows clear reporting of rolling year-over-year growth, avoiding distortions from partial periods or calendar-year resets.
+
+Dependencies
+[Sales MAT] – Current 12-month rolling total
+CALCULATE([Sales Amount] , DATEINPERIOD(Date[Date] , MAX(Date[Date]) , -12 , MONTH ))
+
+[PYMAT Sales] – Prior year rolling total
+CALCULATE([Sales MAT] , DATEADD(Date[Date] , -12 , MONTH ))
+
+[MATG Sales] – Absolute difference between the two
+var current_MAT = [Sales MAT]
+var previousYear_MAT = [PYMAT Sales] 
+var result = IF(NOT ISBLANK(current_MAT) && NOT ISBLANK(previousYear_MAT) , current_MAT - previousYear_MAT) 
+
+Thank you :)
