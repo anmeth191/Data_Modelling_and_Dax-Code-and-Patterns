@@ -7,7 +7,7 @@ The first transaction was recorded on March 1, 2018
 The current filter context date is August 1, 2025
 This context is key to understanding how the virtual table behaves.
 
-🧮 DAX Code
+DAX Code
 
 30_Days_Sales_AVG :=
 VAR Thirty_days_period =
