@@ -10,6 +10,19 @@ IF(
     )
 )
 
+
+This variation is helpful for comparing the same date range from last year, but it’s recommended to use DATEADD if the model slices time dynamically or has missing dates.
+Variation 2:
+PYMAT Sales :=
+IF(
+    [ShowValueForDates],
+    CALCULATE(
+        [Sales MAT],
+        SAMEPERIODLASTYEAR(Date[Date])
+    )
+)
+
+
 How it Works
 DATEADD('Date'[Date], -1, YEAR) shifts the current filter context exactly one year back.
 [Sales MAT] is then calculated over that new time window — effectively returning the MAT from the prior year.
