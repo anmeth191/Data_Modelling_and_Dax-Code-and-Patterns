@@ -1,0 +1,67 @@
+This measure calculates the 12-month moving average of sales using a virtual window.
+ It ensures accuracy by avoiding early incomplete periods and computes only over dates where sales occurred (DateWithSales = TRUE).
+
+Scenario Setup
+To understand the logic, assume the following:
+The current date context is: 08/04/2025
+The first sale in the dataset occurred on: 03/01/2018
+
+I will explain each line of the code but there is a summary below the code as well for support.
+
+DAX Code
+
+//Create a virtual table from dates containing the last date in the current filter context and year back for example today is 08/04/2025 then the range is 08/05/2024 - 08/04/2025
+1Y_AVG_SALES :=
+VAR one_year_table =
+    CALCULATETABLE(
+        DATESINPERIOD('Date'[Date], MAX('Date'[Date]), -1, YEAR),
+        
+//This is a flag to only get days with sales and not pass to dates with no Data
+'Date'[DateWithSales] = TRUE
+    )
+
+//get the first sale transaction date ever in the Sales table so it will be 03/01/2018
+VAR first_sales_date =
+    CALCULATE(MIN(Sales[Order Date]), REMOVEFILTERS())
+
+//calculate the first date in the virtual table using a MINX to iterate the table in this case would be 08/05/2024
+VAR first_date_one_year_table =
+    MINX(one_year_table, 'Date'[Date])
+
+//Compares if 03/01/2018 is earlier than 08/05/2024 , then if it is true execute
+VAR result =
+    IF(
+        first_sales_date <= first_date_one_year_table,
+        
+        // Optimized calculation
+        CALCULATE(
+            DIVIDE([Sales Amount], DISTINCTCOUNT(Sales[Order Date])),
+            one_year_table
+        )
+    )
+
+RETURN
+    result
+Explanation – Step-by-Step
+
+Variable	What It Does	Example Value
+one_year_table	Creates a virtual table from 08/01/2024 to 08/01/2025, but only includes dates with sales.	12 months
+first_sales_date	Finds the earliest sale in the data, ignoring filters.	03/01/2018
+first_date_one_year_table	Gets the earliest date in the one_year_table, which will be 08/01/2024.	08/01/2024
+result	Compares the dataset's starting point to the window’s start. If valid, calculates the average sales.	If 2018 < 2024, calculate average
+
+Why This Pattern?
+Ensures you don’t get distorted results at the start of the dataset
+Focuses only on dates with actual sales
+Leverages DATESINPERIOD for rolling logic
+Uses DIVIDE + DISTINCTCOUNT for optimized performance
+
+Alternative: AVERAGEX Version
+Replace the optimized logic with:
+
+AVERAGEX(one_year_table, [Sales Amount])
+Use this if:
+You’re averaging non-additive measures
+You need to iterate across rows explicitly
+
+Thank you :)
