@@ -62,4 +62,44 @@ Only uses valid sales days to compute the rolling average
 Adaptable for different periods (7-day, 12-month, 90-day, etc.)
 Great for performance tracking, smoothing out seasonality, or input to KPIs
 
+
+///// IMPORTANT: OPTIMIZED FOR PERFORMANCE
+
+AVG_3M_Sales_Optimized :=
+VAR window_table =
+    CALCULATETABLE(
+        DATESINPERIOD('Date'[Date], MAX('Date'[Date]), -3, MONTH),
+        'Date'[DateWithSales] = TRUE
+    )
+VAR min_sales_date =
+    CALCULATE(MIN(Sales[Order Date]), REMOVEFILTERS())
+VAR first_date_window_table =
+    MINX(window_table, 'Date'[Date])
+
+////OPTMIZED PART DOING A DIVIDE INSTEAD OF AVERAGEX
+VAR results =
+    IF(
+        min_sales_date <= first_date_window_table,
+        CALCULATE(
+            DIVIDE([Sales Amount], DISTINCTCOUNT('Sales'[Order Date])),
+            window_table
+        )
+    )
+RETURN
+    results
+
+ Why This Works (and When to Use It)
+DIVIDE([Sales], DISTINCTCOUNT(Order Date)) is much faster than AVERAGEX(...) because it avoids row iteration.
+
+Works only when:
+
+[Sales Amount] is additive
+Order Date is reliably populated (no missing days)
+Your model doesn’t use non-additive measures like %s or weighted values
+
+When Not to Use This
+Avoid the optimized version if:
+You're averaging ratios, percentages, or non-additive KPIs
+You can't guarantee one row per date (i.e., duplicates, or nulls in Order Date)
+
 Thank you :)
