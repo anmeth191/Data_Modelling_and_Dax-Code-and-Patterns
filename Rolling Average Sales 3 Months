@@ -1,0 +1,65 @@
+This measure calculates a 3-month moving average of sales, based only on dates with actual sales activity, 
+and protects against computing averages too early in the dataset (before 3 months of valid data exist).
+
+To understand better let's use this scenario Context
+
+Today’s date (i.e. the latest visible date in the visual context) = 08/04/2025
+First transaction in dataset = 03/01/2018
+
+This context helps frame what the virtual table and the comparison logic are doing.
+
+I will explain each line of code but there is a summary explanation at the end too.
+
+DAX Code
+
+AVG_3M_Sales :=
+//Create a virtual Table with dates containing the last 3 months , so if today is 08/04/2025 it will give back a table with dates from 05/04/2025 to 08/04/2025
+VAR window_table =
+    CALCULATETABLE(
+        DATESINPERIOD('Date'[Date], MAX('Date'[Date]), -3, MONTH),
+//this is a flag that makes sure we do not pass the last transaction recorded in the sales Dataset.
+  'Date'[DateWithSales] = TRUE
+    )
+
+//calculates the first sales transaction so in our case 03/01/2018
+VAR min_sales_date =
+    CALCULATE(MIN(Sales[Order Date]), REMOVEFILTERS())
+
+//calculates the first day in the virtual table window_table which is 05/04/2025
+VAR first_date_window_table =
+    MINX(window_table, 'Date'[Date])
+
+//creates a comparison saying is 03/01/2028 less than 05/04/2025 , this is true then execure the true side
+VAR results =
+    IF(
+        min_sales_date <= first_date_window_table,
+//Averagex receives the 3 months virtual table and calculates the average of the sales amount  
+        AVERAGEX(window_table, [Sales Amount])
+    )
+
+RETURN
+//return the result
+    results
+
+Breakdown of Logic
+Variable	Description
+window_table	Creates a virtual table with the last 3 months of dates (e.g., from 05/01/2025 to 08/01/2025), filtered only to days with sales (DateWithSales = TRUE).
+min_sales_date	Captures the earliest recorded transaction date in the dataset, ignoring filters.
+first_date_window_table	Gets the first date within the 3-month rolling window (e.g., 05/01/2025).
+results	Only performs the average calculation if the dataset contains at least 3 full months of data — otherwise returns blank to avoid misleading numbers.
+
+Example: Visual Context = August 2025
+DATESINPERIOD(...) → Returns May–August 2025
+min_sales_date → March 1, 2018
+first_date_window_table → May 1, 2025
+min_sales_date <= first_date_window_table → TRUE
+Compute the AVERAGEX over the 3-month window
+
+Why This Pattern Matters:
+
+Prevents misleading averages on edge dates (e.g., first few months of dataset)
+Only uses valid sales days to compute the rolling average
+Adaptable for different periods (7-day, 12-month, 90-day, etc.)
+Great for performance tracking, smoothing out seasonality, or input to KPIs
+
+Thank you :)
