@@ -1,10 +1,10 @@
 This Date table supports advanced fiscal scenarios, including 13-month calendars. Developed by SQLBI — production-ready and battle-tested. No changes needed unless working with a non-standard fiscal structure.
 
- This code is publicly available and shared by SQLBI as part of their learning resources and examples.
+IMPORTANT !!! PLEASE READ
+This code is publicly available and shared by SQLBI as part of their learning resources and examples.
 I am not claiming authorship — I’m leveraging it as a proven foundation to learn, apply, and build.
 I’m not reinventing the wheel — I’m learning how to use it to build better tools.
 Reference: DAX Patterns (by SQLBI).
-
 
 -- Create an advanced Date table with fiscal logic
 Date = 
@@ -102,5 +102,43 @@ GENERATE(
     )
 )
 
+
+This Date table is built to support month-level time intelligence and flexible fiscal calendars, including 13-month fiscal years. It allows for powerful analytical capabilities even when standard DAX time intelligence functions are not applicable.
+
+Customization Points:
+FirstFiscalMonth → defines the fiscal year start (e.g., March = 3).
+MonthsInYear → typically 12 (but can be more for 13-month calendars).
+GranularityByDate → one row per day.
+GranularityByMonth → one row per month.
+
+Choose your granularity based on the business requirements.
+
+Column Guide
+Column	Description	Example
+Date	Daily granularity date (only for full-date)	8/14/2007
+Year Month Key	YYYYMM used for relationships	200708
+Year Month	Month-Year label	Aug 2007
+Year Quarter	Quarter-Year label	Q3-2007
+Fiscal Year	Fiscal Year label	FY 2008
+Fiscal Quarter	Fiscal Quarter label	FQ2
+Fiscal Month	Fiscal Month label	Aug
+Month Number	Calendar month (1–12 or more)	8
+Fiscal Month Number	Fiscal month (1–13)	6
+Fiscal Year Quarter Number	Numeric quarter sequence	8033
+
+…plus many helper columns for ease of filtering, relationships, or hierarchy building.
+
+Supported Hierarchies
+You can easily create these hierarchies in your model:
+Fiscal Year → Quarter → Month
+Fiscal Year → Month
+Year → Quarter → Month
+Year → Month
+
+Use Case Notes
+Optimized for visuals at or above the month level.
+Does not require all months in a calendar year.
+Compatible with DirectQuery and import models.
+Avoids the need for DateWithSales columns by design.
 
 Thank you :)
