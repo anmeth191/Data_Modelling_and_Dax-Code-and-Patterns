@@ -1,0 +1,58 @@
+YTD Sales Pattern - Custom Implementation without DATESYTD (Built in function)
+This measure calculates the Year-To-Date (YTD) sales manually using year/month number keys
+Instead of relying on built-in time intelligence, we define the filter logic ourselves
+
+Note: Date Table must be created and integrated in the model for this to work.
+
+Code:
+YTD Sales =
+// Find in the current filter context the max Year Month Number
+// For example: 200703 represents March 2007
+VAR lastMonthAvailable = MAX('Date'[Year Month Number])
+
+// Find the max Year in the current filter context, e.g., 2007
+VAR lastYearAvailable = MAX('Date'[Year])
+
+// Now perform the YTD calculation
+VAR result =
+    CALCULATE(
+        Sales[Sales Amount],
+
+        // This removes any existing filters on the Date table
+        // (ALL('Date') would also work here, but REMOVEFILTERS is more explicit)
+        REMOVEFILTERS('Date'),
+
+        // This is where the custom logic kicks in:
+        // The filter says: Only include dates up to the max YearMonthNumber in context
+        // For example, if we are in March, it includes Jan, Feb, and March
+        'Date'[Year Month Number] <= lastMonthAvailable,
+
+        // Also ensure we're only including rows from the same year as the current filter
+        'Date'[Year] = lastYearAvailable
+    )
+
+RETURN
+    result
+
+Example:
+so we are creating virtual Tables again if we are in march it will be
+2007 -> Year 
+200701 Jan   ->  2
+200702 Feb   ->  2 
+200703 March  -> 1  here the condition will be true so calculates the Sales amount for the 3 months so it will be 5 total
+
+assuming we are in May
+2007 -> Year
+200701 Jan
+200702 Feb
+200703 March
+200704 April
+200705 May = True then calculate the sales amount for this table 
+
+This pattern is especially useful when:
+
+You're not allowed to mark the date table as a Date Table (yes, that happens).
+You're dealing with non-standard calendars (13 months, shifted fiscal starts, etc.).
+You're working with aggregated tables by month instead of daily granularity.
+
+Thank you :)
