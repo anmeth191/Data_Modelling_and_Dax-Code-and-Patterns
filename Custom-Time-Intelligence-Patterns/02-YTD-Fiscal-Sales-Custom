@@ -1,0 +1,54 @@
+This measure calculates Year-To-Date (YTD) sales based on Fiscal Year logic, rather than relying on the built-in DATESYTD function. This is extremely useful when:
+
+You're working with a custom fiscal calendar (e.g., starts in July, March, etc.)
+You're using a Date table that isn't marked as a standard date table
+You want precise control over the time logic using integer keys
+
+Assumptions
+You have a Date table that includes:
+
+Year Month Number (e.g., 200705 for May 2007)
+Fiscal Year Number (e.g., 2007)
+The Sales table is properly related to the Date table
+
+DAX Code
+YTD Sales Fiscal = 
+//find the last year month number in the current filter context for example if the calculation is in row may 2007 then it will be 200705
+var LastMonthAvailable = MAX( 'Date'[Year Month Number] )
+
+//Find the last fiscal year available in the current filter context for example 2007
+var LastFiscalYearAvailable = MAX( 'Date'[Fiscal Year Number] )
+
+var result = 
+CALCULATE( 
+    Sales[Sales Amount] ,
+        //ALL('Date') Produces the same function remove the filter from the Date table , acts a filter modifier
+        REMOVEFILTERS('Date'),
+
+        //evaluate if the current filter context is less or equal than LastMonthAvailable so we are in May it will return true for Jan to May and give a table back for sales amount
+        'Date'[Year Month Number] <= LastMonthAvailable,
+
+        //evaluates if the current year number is equal to the last one in the current filter context
+        'Date'[Fiscal Year Number] = LastFiscalYearAvailable
+)
+return 
+result
+
+
+How This Works
+Let’s say your current row is May 2007 in a fiscal year starting in March.
+Year Month Number will be 200705
+The formula removes all filters and reconstructs the fiscal YTD by including rows:
+where Year Month Number <= 200705
+and Fiscal Year Number = 2007
+
+So you’re effectively building a virtual table of months:
+March → April → May — and summing their sales.
+
+Why This Pattern Is Useful
+Bypasses DATESYTD, giving you full control
+Works even with non-standard fiscal calendars
+Transparent logic → you can audit and tweak it easily
+Great for reporting at month level without needing exact day-level data
+
+Thank you :)
