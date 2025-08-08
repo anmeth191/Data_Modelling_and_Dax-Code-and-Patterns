@@ -1,0 +1,51 @@
+This measure calculates Previous Year Sales manually instead of using built-in functions like DATEADD or SAMEPERIODLASTYEAR.
+It’s useful when working with a custom Date table that allows you to achieve the same calculation faster and with more control.
+
+Requirements:
+
+'Date'[Year] column
+'Date'[Month Number] column
+
+PY Sales = 
+//This line captures the Year in the current filter context
+var currentYearNumber = SELECTEDVALUE('Date'[Year] )
+//This line captures the Previous Year by using the currentYearNumber variable so if we are in 2008 substract 1 year = 2007
+var previousYearNumber = currentYearNumber - 1
+var result = 
+            //Initialize the Sales amount calculation
+             CALCULATE( Sales[Sales Amount] , 
+               //remove the filters in the Date Table so all dates are visible , ALL function creates the same function
+               REMOVEFILTERS('Date'),
+               //Introduce a filter when the current filter context = previous year number so if we are in 2009 it will return the amount for 2008
+                  'Date'[Year] =  previousYearNumber ,
+                  //Reintroduce the filter for column Month Number , so the sales amount amount will be affected at the month level for the previous year too
+                    VALUES( 'Date'[Month Number] ))
+             return
+                     result
+How It Works
+Identify the current year
+SELECTEDVALUE('Date'[Year]) retrieves the year from the current filter context.
+Tip: MAX('Date'[Year]) can be used instead, as it avoids returning blank when multiple years are in context.
+
+Calculate the previous year
+Subtract 1 from the current year to get the prior year (e.g., 2008 → 2007).
+
+Clear existing date filters
+REMOVEFILTERS('Date') removes all filters from the Date table, letting us rebuild the filter context from scratch.
+
+Apply year filter for the previous year
+Restricts the calculation to rows where 'Date'[Year] equals the calculated previous year.
+
+Reapply the month filter
+VALUES('Date'[Month Number]) brings back the months from the current filter context, but applied to the previous year.
+
+If you’re viewing March 2009, it will return March 2008.
+
+If you’re viewing Jan–Mar 2009, it will return Jan–Mar 2008.
+
+Why This Works
+Without VALUES('Date'[Month Number]), the calculation would give total sales for the entire previous year, not the matching months.
+This pattern is especially helpful when you don’t want to rely on built-in DAX time intelligence or when your Date table doesn’t meet their requirements.
+Works at month level or above — not suitable for daily or weekly granularity without adjustments.
+
+Thank you :)
