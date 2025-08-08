@@ -1,0 +1,49 @@
+This measure calculates Quarter-To-Date sales manually, using Year Month Number and Year Quarter Number keys instead of relying on DAX’s built-in TOTALQTD or other time intelligence.
+This pattern works for both standard and fiscal quarters, provided the Date table has the required columns.
+
+Note: Date table must be integrated and have Year Month Number and Year Quarter Number columns.
+
+Code:
+
+QTD Sales = 
+// Get the highest Year Month Number visible in the current filter context
+// Example: If the visual is showing up to May 2007, this returns 200705
+VAR current_year_month_number = MAX('Date'[Year Month Number])
+
+// Get the highest Year Quarter Number in the current filter context
+// Example: If we are in Q2 2007, this could be 20072 (depending on your table’s coding format)
+VAR current_qtd = MAX('Date'[Year Quarter Number])
+
+// Calculate sales for all months from the start of the quarter up to the current month
+VAR result =
+    CALCULATE(
+        Sales[Sales Amount],
+
+        // Remove existing filters on the Date table to take full control of the filter context
+           //Using ALL('Date') produces the same effect
+        REMOVEFILTERS('Date'),
+
+        // Include only months that are less than or equal to the current month in context
+        // This ensures we only sum from the start of the quarter up to the selected month
+        'Date'[Year Month Number] <= current_year_month_number,
+
+        // Ensure all dates are in the same quarter as the current context
+        'Date'[Year Quarter Number] = current_qtd
+    )
+
+RETURN
+    result
+
+Example in action:
+If the current filter context is May 2007 (Q2 2007):
+Year Quarter Number → 20072
+Year Month Numbers included → 200704 (Apr) and 200705 (May)
+This returns sales for April + May 2007.
+
+If the current filter context is July 2007 (Q3 2007):
+
+Year Quarter Number → 20073
+Year Month Numbers included → 200707 (Jul) + 200708 (Aug) + 200709 (Sep, if visible in context)
+Only months in that same quarter and up to the current month are included.
+
+Thank you :)
