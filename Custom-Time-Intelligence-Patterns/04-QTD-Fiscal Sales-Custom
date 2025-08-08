@@ -1,0 +1,53 @@
+This measure calculates Quarter-to-Date sales using fiscal keys, without TOTALQTD or other built-in Time Intelligence.
+We rebuild the window explicitly with Year Month Number and Fiscal Year Quarter Number.
+
+Prereqs
+
+'Date'[Year Month Number] (e.g., 200705 for May 2007)
+'Date'[Fiscal Year Quarter Number] (encoded however your model defines FY quarters)
+Relationship between Sales and Date
+
+Fiscal QTD Sales = 
+// find the max Year Month Number in the current filter context (e.g., 200705 for May 2007)
+VAR YearMonthNumber = MAX('Date'[Year Month Number])
+
+// find the current Fiscal Year-Quarter key in the current filter context 
+VAR currentFiscalQuarter = MAX('Date'[Fiscal Year Quarter Number])
+
+VAR result =
+    CALCULATE(
+        Sales[Sales Amount],
+
+        // remove any filters on the Date table so we can rebuild the window explicitly
+        REMOVEFILTERS('Date'),
+
+        // include all months up to the current month in context
+        'Date'[Year Month Number] <= YearMonthNumber,
+
+        // but only those months that belong to the same fiscal quarter in context
+        'Date'[Fiscal Year Quarter Number] = currentFiscalQuarter
+    )
+
+RETURN
+    result
+
+How it behaves:
+
+If fiscal year starts in March and the current row is May 2007:
+YearMonthNumber → 200705
+
+currentFiscalQuarter → (your FY Q1 key  which includes months Mar–May 2007)
+Included months → 200703, 200704, 200705
+Result → sum of [Sales Amount] for those months only.
+
+If the row is August 2007 (FY Q2 = Jun–Aug):
+Included months → 200706, 200707, 200708
+
+Notes
+ALL('Date') Produces the same effect
+REMOVEFILTERS('Date') gives full control. We then reapply only the filters we need (quarter + up-to-current month).
+
+Works with any fiscal start month as long as your date table’s FY columns are correct.
+Keep this with your “using-no-time-intelligence” patterns. It pairs with your custom YTD Fiscal and QTD (Gregorian) measures.
+
+Thank you :)
