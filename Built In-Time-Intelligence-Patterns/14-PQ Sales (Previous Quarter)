@@ -11,7 +11,7 @@ current_filter_context_date <= max_date_with_sales
 
 This returns FALSE for dates after the last recorded sale, preventing any downstream calculations from being evaluated past that point.
 
-✅ Variation 1: Using DATEADD (manual offset)
+Variation 1: Using DATEADD (manual offset)
 
 PQ_Sales = 
 IF
@@ -21,13 +21,9 @@ CALCULATE( [Sales_amount], CALCULATETABLE( DATEADD('Date'[Date]) , -1 ,  QUARTER
 )
 
 Shifts the current filter context back by one quarter
-
 Limits comparison to prior-quarter dates where sales actually occurred
-
 Respects the [ShowValuesWithSales] cutoff to avoid future-looking valuesShifts the current filter context back by one quarter
-
 Limits comparison to prior-quarter dates where sales actually occurred
-
 Respects the [ShowValuesWithSales] cutoff to avoid future-looking values
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -39,11 +35,8 @@ PREVIOUSQUARTER() returns the entire previous quarter, regardless of the current
 Example:
 
 Current context: August 1–15 (partial month of Q3)
-
 PREVIOUSQUARTER() → April 1–June 30 (full Q2)
-
 This leads to unfair comparisons of a partial period to a full quarter
-
 Use DATEADD(..., -1, QUARTER) instead, which respects the shape of the current time window.
 
 Thank you :)
