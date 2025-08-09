@@ -1,0 +1,34 @@
+This measure return the difference between current fiscal period sales and the previous fiscal year’s corresponding period, using your custom [PY Fiscal Sales] pattern.
+
+Dependencies:
+
+[Sales Amount]
+[PY Fiscal Sales] (must shift to prior fiscal year and reapply the same month set)
+
+Code
+
+YOY Sales Fiscal = 
+//Get the current fiscal year sales
+ var current_fiscal_sales = Sales[Sales Amount]
+//this measure needs to be in your model , this variable captures the previous year fiscal sales 
+ var previous_fiscal_sales = [PY Fiscal Sales] 
+ var results = 
+              //If starts to evaluate
+               IF( 
+                //if current_fiscak_sales and previous_fiscal_sales are not blank then substract them , only the true parts is evaluated
+                 NOT ISBLANK(current_fiscal_sales) && NOT ISBLANK(previous_fiscal_sales) , current_fiscal_sales - previous_fiscal_sales )
+                 return 
+                 //return results
+                  results
+
+How it works
+current_fiscal_sales → sales in the current fiscal filter context.
+previous_fiscal_sales → pulls the same fiscal months from the prior fiscal year.
+IF(...) guards against blanks so you don’t show misleading diffs when one side is empty.
+
+Pair it with (optional)
+YOY % Fiscal:
+YOY % Fiscal = DIVIDE( [YOY Sales Fiscal], [PY Fiscal Sales] )
+Uses DIVIDE to avoid divide-by-zero issues.
+
+Thank you :)
