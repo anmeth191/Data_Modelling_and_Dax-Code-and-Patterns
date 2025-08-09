@@ -1,0 +1,50 @@
+This measure calculates the Previous Fiscal Year Sales manually using fiscal year numbers, instead of relying on built-in time intelligence functions.
+
+This approach is useful when:
+You have a custom Date table with fiscal periods.
+You want better performance and control over the filters applied.
+You need to ensure the calculation works with non-standard fiscal calendars.
+
+Dependencies
+'Date'[Fiscal Year Number] – Numeric representation of the fiscal year (e.g., 2022).
+'Date'[Month Number] – Month number for filtering within the fiscal year.
+[Sales Amount] – Base measure for total sales.
+
+Code:
+PY Fiscal Sales = 
+
+//Selected value captures the value of the current Fiscal Year in the filter context
+var current_fiscal_year = SELECTEDVALUE( 'Date'[Fiscal Year Number] )
+//Susbtract one year to the current fiscal year
+var previous_fiscal_year = current_fiscal_year - 1
+//Final Value
+var result = CALCULATE( 
+                        //Evaluate the Sales amount Measure
+                       [Sales Amount] ,  
+                       //Remove the Filter in the Date Table exposing all the years and Months
+                        REMOVEFILTERS('Date'),
+                        //Introduce filter for the Fiscal year Number column when  is equal to the value of previous year
+                           'Date'[Fiscal Year Number] <= previous_fiscal_year,
+                           //Reintroduce the filter for the Month Number so it calculates the sales amount at the previous fiscal year Month level too
+                              VALUES( 'Date'[Month Number] ))
+                              return 
+                              //return result
+                              result
+How It Works
+Capture Current Fiscal Year
+SELECTEDVALUE('Date'[Fiscal Year Number]) gets the fiscal year in the current filter context (e.g., 2023).
+Find Previous Fiscal Year
+Subtract 1 from the current fiscal year to get the previous fiscal year (e.g., 2022).
+Clear Existing Filters
+REMOVEFILTERS('Date') ensures the calculation is not restricted to the current filter context — all dates are made visible.
+Reapply Custom Filters
+Limit results to rows where the Fiscal Year Number equals the previous fiscal year.
+Reintroduce the Month Number filter so results align month-by-month for the previous year.
+
+Example
+If today’s context is Fiscal Year 2024, Month 5:
+current_fiscal_year → 2024
+previous_fiscal_year → 2023
+The measure returns sales from Fiscal Year 2023, Month 5 (and earlier months if in a cumulative calculation).
+
+Thank you :)
