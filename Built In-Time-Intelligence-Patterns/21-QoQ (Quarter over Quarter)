@@ -19,3 +19,5 @@ Behavior
 Returns the raw delta between current and prior quarter sales
 Avoids misleading output by returning blank if either value is missing
 Works with partial periods if [PQ Sales] was defined using the DATEADD pattern with cutoff logic
+
+Thank you :)
