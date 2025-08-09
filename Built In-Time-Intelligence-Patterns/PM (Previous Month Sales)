@@ -64,3 +64,5 @@ Returns the difference in sales between the current and previous month
 Avoids showing misleading deltas by returning BLANK() if either month is missing
 Works cleanly with partial-month logic if [PM Month Sales] uses DATEADD and [ShowValuesWithSales]
 
+Thank you :)
+
