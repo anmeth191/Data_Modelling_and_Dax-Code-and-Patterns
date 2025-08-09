@@ -12,7 +12,7 @@ Accurately calculates YTD
 Stops at the last sales date
 Optionally supports fiscal years
 
-🛠 Step 1 – Create the Last Sales Date Flag
+Step 1 – Create the Last Sales Date Flag
 
 Last_Date_With_Sales :=
 VAR finding_max_sales_date =
@@ -26,7 +26,7 @@ RETURN
     current_date_filter_context <= finding_max_sales_date
 This measure returns TRUE for dates up to and including the last order date in the sales order table. After that, it returns FALSE.
 
-🧮 Step 2 – YTD Sales That Stops at Last Sales Date
+Step 2 – YTD Sales That Stops at Last Sales Date
 
 YTD_Sales_With_Cutoff :=
 IF(
@@ -38,7 +38,7 @@ IF(
 )
 Now your YTD sales will cut off when the data ends — no artificial trailing totals.
 
-🗓️ Step 3 – YTD with Fiscal Year (Optional)
+Step 3 – YTD with Fiscal Year (Optional)
 If you use a fiscal year ending March 31, pass that as the second argument to DATESYTD:
 
 YTD_Sales_Fiscal_With_Cutoff :=
