@@ -1,0 +1,32 @@
+This measure calculates the Year-Over-Year percentage change in sales.
+It uses the YOY Sales measure as the numerator and the PY Sales measure as the denominator, both of which must already exist in your model.
+
+Dependencies:
+
+[YOY Sales] – Custom Year-over-Year difference measure.
+
+[PY Sales] – Custom Previous Year Sales measure.
+
+
+YOY % Sales = 
+DIVIDE( [YOY Sales], [PY Sales] )
+
+How it Works
+[YOY Sales] returns the absolute difference between current and previous year sales.
+[PY Sales] returns the previous year's sales for the same period.
+DIVIDE is used instead of / to safely handle division by zero, returning BLANK when [PY Sales] is zero or blank.
+
+The formula produces the percentage growth or decline compared to the previous year.
+
+Example:
+If:
+YOY Sales = 20,000
+PY Sales = 100,000
+
+Then:
+YOY % Sales= 
+100,000
+20,000
+​= 0.20 (or 20%)
+
+Thank you :)
