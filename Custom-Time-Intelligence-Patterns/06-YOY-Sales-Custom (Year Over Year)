@@ -1,0 +1,57 @@
+This measure calculates the Year-Over-Year (YOY) change in Sales by comparing the current year's value against the previous year's value.
+Instead of relying on DAX built-in functions like PARALLELPERIOD, this pattern uses a custom Previous Year measure (PY Sales) as its foundation.
+
+Dependency:
+This measure will only work if the PY Sales measure is already implemented in your model.
+The PY Sales measure handles the custom logic of retrieving sales for the same months of the previous year, bypassing the built-in SAMEPERIODLASTYEAR limitations for custom date tables.
+
+YOY Sales
+
+YOY Sales = 
+//capture the current year sales
+var ValueCurrentPeriod = Sales[Sales Amount]
+
+//capture the previous year sales custom calculation
+var ValuePreviousPeriod = [PY Sales] 
+
+var result =
+ //initialize validation
+ IF( 
+    //if the current value period is not blank and the previous then substract them only the true is evaluated
+    NOT ISBLANK( ValueCurrentPeriod ) && NOT ISBLANK(ValuePreviousPeriod ) , 
+    ValueCurrentPeriod - ValuePreviousPeriod 
+)
+return 
+//return the result
+result
+
+
+Dependency – PY Sales
+PY Sales =
+var current_Year = SELECTEDVALUE('Date'[Year])
+var PY_value = current_Year - 1 
+var result =
+     CALCULATE(
+        [Sales Amount],  
+        REMOVEFILTERS('Date'), 
+        'Date'[Year] = PY_value, 
+        VALUES('Date'[Month Number])
+    )
+return
+result
+
+How it Works
+ValueCurrentPeriod gets the sales amount in the current filter context.
+ValuePreviousPeriod retrieves the equivalent sales from the same months in the prior year via the PY Sales measure.
+An IF statement ensures both values are not blank before subtracting, avoiding unwanted blank or incorrect results.
+
+The calculation returns the difference:
+
+YOY Sales = Current Year Sales − Previous Year Sales
+
+Example:
+If the current period is March 2008:
+PY Sales will return sales for March 2007 (same month, previous year).
+YOY Sales will subtract 2007’s value from 2008’s value.
+
+Thank you :)
