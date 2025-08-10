@@ -24,7 +24,7 @@ var result = CALCULATE(
                        //Remove the Filter in the Date Table exposing all the years and Months
                         REMOVEFILTERS('Date'),
                         //Introduce filter for the Fiscal year Number column when  is equal to the value of previous year
-                           'Date'[Fiscal Year Number] <= previous_fiscal_year,
+                           'Date'[Fiscal Year Number] = previous_fiscal_year,
                            //Reintroduce the filter for the Month Number so it calculates the sales amount at the previous fiscal year Month level too
                               VALUES( 'Date'[Month Number] ))
                               return 
