@@ -1,0 +1,47 @@
+This measure calculates the sales difference between the current fiscal quarter and the previous fiscal quarter.
+It uses the [Fiscal Sales PQ] measure as a dependency to obtain the prior fiscal quarter’s sales.
+
+Code
+QOQ Fiscal Sales =
+//get the value of the current Fiscal Quarter
+VAR current_fiscal_value = [Sales Amount]
+//Get the value of the Previous fiscal Quarter , this measure should be already exisiting in the model
+VAR previous_fiscal_value = [Fiscal Sales PQ]
+VAR result =
+    IF(
+ //Validate with IF statement to ensure both values are non-blank before performing the subtraction.
+        NOT ISBLANK(current_fiscal_value) &&
+        NOT ISBLANK(previous_fiscal_value),
+        current_fiscal_value - previous_fiscal_value
+    )
+RETURN
+    result
+
+How it Works
+Current Fiscal Quarter Sales
+current_fiscal_value captures the sales amount for the fiscal quarter in the current filter context.
+
+Previous Fiscal Quarter Sales
+previous_fiscal_value retrieves the result from your [Fiscal Sales PQ] measure.
+
+Validation
+The IF statement ensures both values are non-blank before performing the subtraction.
+This prevents returning misleading numbers when data is missing for one of the quarters.
+
+Calculation
+If both values exist, it subtracts:
+Current Fiscal Quarter Sales - Previous Fiscal Quarter Sales
+
+Dependencies
+[Sales Amount] measure
+[Fiscal Sales PQ] measure (must be created first)
+A properly configured Date table with fiscal columns.
+
+Example
+If:
+FQ3-2024 sales = $120,000
+FQ2-2024 sales = $100,000
+Then:
+QOQ Fiscal Sales = 120,000 - 100,000 = 20,000
+
+Thank you :)
