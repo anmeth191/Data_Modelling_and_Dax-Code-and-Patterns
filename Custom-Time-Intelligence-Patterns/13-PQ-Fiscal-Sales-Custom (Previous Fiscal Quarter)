@@ -1,0 +1,49 @@
+This measure calculates sales for the previous fiscal quarter, based on the current filter context.
+It’s a custom time intelligence calculation that works with fiscal calendars, not just standard quarters.
+
+Code
+Fiscal Sales PQ =
+//get the Numeric value of the Fiscal Year Quarter Number, it is an index value that represents this Year and Quarter
+VAR current_Fiscal_Quarter = SELECTEDVALUE( 'Date'[Fiscal Year Quarter Number] )
+VAR previous_fiscal_quarter = current_Fiscal_Quarter - 1
+VAR result =
+    CALCULATE(
+        Sales[Sales Amount],
+        // Remove any filter context from the Date table so all dates are considered
+        REMOVEFILTERS('Date'),
+        // Filter to only the previous fiscal quarter
+        'Date'[Fiscal Year Quarter Number] = previous_fiscal_quarter,
+        // Reintroduce the filter for the fiscal month inside that quarter
+        VALUES('Date'[Fiscal Month In Quarter Number])
+    )
+RETURN
+    result
+
+How it Works
+Identify the current fiscal quarter
+SELECTEDVALUE('Date'[Fiscal Year Quarter Number]) captures the fiscal quarter in the current filter context (e.g., FQ3-2024 → 8099).
+
+Find the previous fiscal quarter
+Subtract 1 from the current fiscal quarter number to get the previous one.
+
+Remove all filters on Date
+This ensures the calculation can reference the entire Date table without being constrained by the current context.
+
+Apply previous quarter filter
+'Date'[Fiscal Year Quarter Number] = previous_fiscal_quarter restricts results to only that specific prior fiscal quarter.
+
+Reintroduce month-in-quarter filter
+VALUES('Date'[Fiscal Month In Quarter Number]) ensures the calculation still respects month breakdown inside that quarter — important when used in visuals by month.
+
+Dependencies
+Date table with:
+Fiscal Year Quarter Number
+Fiscal Month In Quarter Number
+[Sales Amount] measure
+
+Example
+If the current context is FQ3-2024, the measure will:
+Identify previous fiscal quarter as FQ2-2024
+Return the total sales amount for all months in FQ2-2024.
+
+Thank you :)
