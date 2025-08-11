@@ -1,0 +1,28 @@
+This measure calculates the percentage change in sales between the current month and the previous month.
+It is built on top of the [MOM Sales] and [PM Sales] measures.
+By dividing the sales variation by the previous month’s sales, it expresses growth or decline as a percentage.
+
+Dependencies:
+
+[MOM Sales] – The month-over-month variation in absolute terms.
+[PM Sales] – The previous month’s sales amount.
+
+Code:
+MOM Sales % = 
+DIVIDE(
+    [MOM Sales], 
+    [PM Sales]
+)
+
+How it works:
+Numerator: [MOM Sales] returns the absolute change in sales between the current month and the previous month.
+Denominator: [PM Sales] returns the sales from the previous month.
+Division: DIVIDE handles the division and returns BLANK() automatically if the denominator is zero or blank, avoiding errors.
+
+Interpretation:
+
+Positive % → Growth from last month.
+Negative % → Decline from last month.
+0% → No change compared to last month.
+
+Thank you :)
