@@ -1,0 +1,28 @@
+This measure calculates the percentage change in sales between the current quarter and the prior quarter.
+It uses [QOQ Sales] for the change in value and [PQ Sales] for the prior quarter baseline.
+
+Code
+QOQ Sales % =
+DIVIDE(
+    [QOQ Sales],   // Difference between current and prior quarter sales
+    [PQ Sales]     // Prior quarter sales (baseline for percentage)
+)
+How it Works
+Numerator → [QOQ Sales]
+Comes from the previous pattern, representing the absolute change in sales between the two quarters.
+
+Denominator → [PQ Sales]
+Represents the prior quarter’s sales, serving as the baseline for percentage change.
+
+Division Handling
+DIVIDE is used instead of the / operator to safely handle divide-by-zero cases — if [PQ Sales] is zero or blank, the result will return blank instead of an error.
+
+Dependencies
+[QOQ Sales] – Quarter-over-quarter absolute sales change.
+[PQ Sales] – Prior quarter sales.
+
+Example Behavior
+If [QOQ Sales] = 20,000 and [PQ Sales] = 180,000:
+QOQ Sales % = 20,000 / 180,000 = 0.1111 → 11.11%
+
+Thank you :)
