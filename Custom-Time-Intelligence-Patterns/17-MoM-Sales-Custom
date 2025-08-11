@@ -1,0 +1,40 @@
+This measure calculates the change in sales between the current month and the previous month.
+It is a custom time intelligence pattern that depends on the [PM Sales] measure (previous month sales).
+The calculation checks for non-blank values in both the current and previous month to avoid returning misleading results when data is missing.
+
+Dependencies:
+[PM Sales] – A measure that calculates the sales amount for the month immediately prior to the current filter context.
+
+Code:
+
+MOM Sales = 
+//get the current Month Sales
+VAR current_Month_Sales = Sales[Sales Amount]
+//Get previous Month Sales , this measure needs to be defined in your model
+VAR previous_month_sales = [PM Sales]
+
+VAR results = 
+  IF ensures both values are not blank, preventing calculations from returning false deltas in months with no data.
+    IF(
+        NOT ISBLANK(current_Month_Sales) &&
+        NOT ISBLANK(previous_month_sales),
+        current_Month_Sales - previous_month_sales
+    )
+RETURN
+    results
+
+How it works:
+
+Current Month Sales:
+Captures the sales amount in the current filter context.
+
+Previous Month Sales:
+Pulls the result of the [PM Sales] measure, which uses the Year Month Number logic to fetch the previous month’s values.
+
+Blank Check:
+IF ensures both values are not blank, preventing calculations from returning false deltas in months with no data.
+
+Difference Calculation:
+Subtracts the previous month’s sales from the current month’s sales, returning the variation amount.
+
+Thank you :)
