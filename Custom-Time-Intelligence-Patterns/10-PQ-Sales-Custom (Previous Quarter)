@@ -1,0 +1,64 @@
+This measure calculates sales for the prior quarter without using built-in time intelligence functions like PARALLELPERIOD.
+It works on a custom Date table by leveraging Year Quarter Number and Month In Quarter Number columns.
+
+Important behavior:
+
+At quarter level (no months in rows), returns the full prior quarter sales.
+At month level (inside a quarter), returns only the same month position in the prior quarter (e.g., Month-in-Quarter 2 returns Month 2 of the prior quarter).
+
+Code:
+PQ Sales = 
+//get the value of the quarter number numeric value  
+VAR currentYearQuarterNumber = MAX('Date'[Year Quarter Number])
+
+//get the previous quarter Number numeric value
+VAR previousQuarterNumber = currentYearQuarterNumber - 1
+
+VAR results =
+    CALCULATE(
+        //calculate the sales amount 
+        Sales[Sales Amount],
+
+        //remove any filters affecting the date table , ALL can achieve the same goal 
+        REMOVEFILTERS('Date'),
+
+        //Introduce new filter when the quarter number is equal to the previous quarter
+        'Date'[Year Quarter Number] = previousQuarterNumber,
+
+        //introduce new filter for the month in quarter affecting previous quarter months 
+        VALUES('Date'[Month In Quarter Number])
+    )
+RETURN
+    //return the result
+    results
+
+How it Works
+Identify current quarter number
+We get the Year Quarter Number from the current filter context. This column must be numeric, e.g., Year * 4 + Quarter - 1, so it increases sequentially across years.
+
+Find prior quarter number
+Subtract 1 from the current quarter number to get the prior quarter’s numeric key.
+
+Clear all existing Date filters
+REMOVEFILTERS('Date') ensures we start fresh with all dates visible, avoiding interference from the current filter context.
+
+Apply prior quarter filter
+We filter 'Date'[Year Quarter Number] to equal the prior quarter number.
+
+Reintroduce month-in-quarter filter
+VALUES('Date'[Month In Quarter Number]) ensures that if we’re at month level, we only get the matching month position from the prior quarter (e.g., month 2 in current quarter → month 2 in prior quarter).
+
+Example Behavior
+Scenario: Current context = Q2 2025
+Quarter-level visual: Returns sales for Q1 2025.
+
+Month-level visual:
+April (Month-in-Quarter = 1) → January sales (Month-in-Quarter = 1 of Q1 2025)
+May (Month-in-Quarter = 2) → February sales (Month-in-Quarter = 2 of Q1 2025)
+
+Dependencies
+'Date'[Year Quarter Number] – Numeric sequence of quarters across years
+'Date'[Month In Quarter Number] – Numeric 1..3 (or 1..4 for 4-month quarters) representing position within quarter
+[Sales Amount] – Base measure for sales
+
+Thank you :)
