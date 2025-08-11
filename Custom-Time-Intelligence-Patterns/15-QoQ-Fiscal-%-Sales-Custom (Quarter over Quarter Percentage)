@@ -1,0 +1,39 @@
+This measure calculates the percentage change in sales between the current fiscal quarter and the previous fiscal quarter.
+It uses [QOQ Fiscal Sales] for the numerator and [Fiscal Sales PQ] for the denominator.
+
+Code
+QOQ Fiscal % =
+DIVIDE(
+    [QOQ Fiscal Sales],
+    [Fiscal Sales PQ]
+)
+How it Works
+Numerator – QOQ Fiscal Sales
+[QOQ Fiscal Sales] returns the absolute difference in sales between the current and previous fiscal quarter.
+
+Denominator – Previous Fiscal Quarter Sales
+[Fiscal Sales PQ] provides the sales amount for the previous fiscal quarter.
+
+Division with Safety
+DIVIDE is used instead of the / operator to avoid errors when the denominator is blank or zero.
+If the denominator is zero or blank, the result will be BLANK().
+
+Final Output
+The formula computes:
+(Current Fiscal Quarter Sales – Previous Fiscal Quarter Sales)
+÷ Previous Fiscal Quarter Sales
+
+Dependencies
+[QOQ Fiscal Sales] measure
+[Fiscal Sales PQ] measure
+A properly configured Date table with fiscal columns.
+
+Example
+If:
+FQ3-2024 sales = $120,000
+FQ2-2024 sales = $100,000
+Then:
+QOQ Fiscal Sales = 20,000
+QOQ Fiscal % = 20,000 / 100,000 = 0.20 → 20%
+
+Thank you :)
