@@ -1,0 +1,48 @@
+This measure calculates sales for the previous month without using DAX built-in time intelligence functions like PARALLELPERIOD or DATEADD.
+It works by comparing the current Year Month Number with the one from the previous month.
+
+Code
+
+PM Sales =
+ //get the current month value
+VAR current_Month_Value = SELECTEDVALUE('Date'[Year Month Number])
+//get the previous month value
+VAR previous_Month_Value = current_Month_Value - 1
+//calculate the sales amount
+VAR results =
+    CALCULATE(
+        Sales[Sales Amount],
+        //remove any filters affecting the Date Table
+        REMOVEFILTERS('Date'),
+        //filter when the month number in the current filter context = previous month value
+        'Date'[Year Month Number] = previous_Month_Value
+    )
+RETURN
+    //return results
+    results
+
+How It Works
+Get Current Month
+SELECTEDVALUE('Date'[Year Month Number]) returns the month in context as a numeric key in the format YYYYMM (e.g., March 2025 → 202503).
+Find Previous Month
+Subtract 1 from the current month key to get the previous month key (202503 - 1 = 202502).
+Calculate Sales
+Remove all existing filters on 'Date' with REMOVEFILTERS('Date').
+Apply a new filter so that only rows where 'Date'[Year Month Number] matches the previous month are included.
+This produces a virtual table of only the previous month’s dates, which is then used to calculate [Sales Amount].
+Return the Value
+
+The result is the sales amount for the previous month relative to the current filter context.
+
+Dependencies
+A properly configured Date table with a Year Month Number column.
+The [Sales Amount] measure.
+
+Example
+If:
+Current context = March 2025 (202503)
+Sales in Feb 2025 = $85,000
+Then:
+PM Sales = 85,000
+
+Thank you :)
