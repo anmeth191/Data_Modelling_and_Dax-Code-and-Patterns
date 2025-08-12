@@ -1,0 +1,43 @@
+This measure dynamically returns the previous period’s sales amount depending on the granularity currently visible in the report visual.
+Instead of creating separate measures for previous month, previous quarter, and previous year, this approach uses ISINSCOPE() to detect which level of the date hierarchy is being used and return the appropriate measure.
+
+Dependencies:
+[PM Sales] – Previous Month Sales
+[PQ Sales] – Previous Quarter Sales
+[PY Sales] – Previous Year Sales
+
+Code:
+PP Sales = 
+SWITCH( 
+    TRUE(),
+      ISINSCOPE( 'Date'[Year Month] ) , [PM Sales] ,
+      ISINSCOPE( 'Date'[Year Quarter]  ) , [PQ Sales] ,
+      ISINSCOPE( 'Date'[Year] ) , [PY Sales] 
+)
+How it works:
+
+SWITCH(TRUE()):
+
+This pattern evaluates each condition in order until it finds one that is TRUE.
+
+ISINSCOPE('Date'[Year Month]):
+If the visual is showing data at Year-Month level, it returns [PM Sales] (previous month sales).
+
+ISINSCOPE('Date'[Year Quarter]):
+If the visual is showing data at Year-Quarter level, it returns [PQ Sales] (previous quarter sales).
+
+ISINSCOPE('Date'[Year]):
+If the visual is showing data at Year level, it returns [PY Sales] (previous year sales).
+
+Advantage:
+
+Flexible: one measure works across different date levels.
+Maintains semantic context: the correct “previous period” measure is always used.
+
+Example:
+
+Viewing by Month → Returns previous month’s sales.
+Viewing by Quarter → Returns previous quarter’s sales.
+Viewing by Year → Returns previous year’s sales.
+
+Thank you :)
