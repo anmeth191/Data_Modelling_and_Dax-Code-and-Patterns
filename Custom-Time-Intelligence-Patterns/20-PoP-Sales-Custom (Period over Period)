@@ -1,0 +1,40 @@
+This measure dynamically calculates the change between the current period and the previous period, based on the granularity shown in the report visual.
+It works at month, quarter, and year levels by leveraging ISINSCOPE() to detect the current context, then calls the appropriate measure:
+
+Month level → MOM Sales (Month-over-Month change)
+Quarter level → QOQ Sales (Quarter-over-Quarter change)
+Year level → YOY Sales (Year-over-Year change)
+
+This removes the need to create multiple visuals or manually switch measures.
+
+Dependencies:
+[MOM Sales] – Month-over-Month sales change.
+[QOQ Sales] – Quarter-over-Quarter sales change.
+[YOY Sales] – Year-over-Year sales change.
+
+Code:
+POP Sales =  
+SWITCH( TRUE() , 
+      ISINSCOPE( 'Date'[Year Month] ) , [MOM Sales],
+      ISINSCOPE( 'Date'[Year Quarter] ) , [QOQ Sales], 
+      ISINSCOPE( 'Date'[Year] ) , [YOY Sales] 
+)
+
+How it works:
+
+SWITCH(TRUE()):
+This pattern evaluates each logical test sequentially until one is TRUE.
+
+ISINSCOPE('Date'[Year Month]):
+Checks if the current visual granularity is Year-Month. If yes → returns [MOM Sales].
+
+ISINSCOPE('Date'[Year Quarter]):
+Checks if the granularity is Year-Quarter. If yes → returns [QOQ Sales].
+
+ISINSCOPE('Date'[Year]):
+Checks if the granularity is Year. If yes → returns [YOY Sales].
+
+Dynamic Behavior:
+The measure adapts automatically to the visual’s level, reducing maintenance and avoiding multiple “static” measures.
+
+Thank you :)
