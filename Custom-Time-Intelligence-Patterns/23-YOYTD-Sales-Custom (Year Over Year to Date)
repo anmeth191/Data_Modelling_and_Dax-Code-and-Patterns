@@ -1,0 +1,41 @@
+Calculates Year-Over-Year Year-To-Date Sales Difference, comparing the current YTD sales to the same period in the previous year. Useful for understanding growth or decline in performance up to the current point in time.
+
+Code
+YOYTD Sales = 
+//Capture the current YTD calculation, this measure needs to be in your model
+VAR current_ytd_sales = [YTD Sales]
+//calculates the Previous Year to Date Sales , this measure needs to be in your model
+VAR previous_tyd_sales = [PYTD Sales]
+
+VAR result = 
+//IF is a sanity check where ensures that both values are not blank, preventing errors in cases where data might be missing    
+IF(
+        NOT ISBLANK(current_ytd_sales) && NOT ISBLANK(previous_tyd_sales),
+        current_ytd_sales - previous_tyd_sales
+    )
+
+RETURN 
+result
+
+How it works
+-Retrieves current YTD sales via an existing [YTD Sales] measure.
+-Retrieves previous YTD sales using your [PYTD Sales] pattern.
+-Checks that both values are not blank, preventing errors in cases where data might be missing (e.g., early in the year).
+-Subtracts previous from current to show the absolute sales growth (or decline).
+-Returns the result — or BLANK() if either value is unavailable.
+
+Examples
+Visual Context:
+
+Assume you're viewing sales up to August for both 2024 and 2025.
+
+Year	YTD Sales PYTD Sales	YOYTD Sales
+2025	120,000	  105,000	    15,000
+2024	105,000	  92,000	    13,000
+2023	92,000	  87,000	    5,000
+
+Interpretation:
+In 2025, the company is up by 15K compared to the same period in 2024.
+The measure returns blank if either YTD or PYTD is not available — for instance, if 2026 only has partial data but 2025 is missing for that period.
+
+Thank you :)
