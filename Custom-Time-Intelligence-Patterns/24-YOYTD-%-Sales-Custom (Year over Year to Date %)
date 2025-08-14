@@ -1,0 +1,25 @@
+Calculates the percentage change in Year-To-Date Sales compared to the previous year — showing how much sales have grown or declined relative to last year’s performance for the same period.
+
+Code
+YOYTD Sales % = 
+DIVIDE( [YOYTD Sales], [PYTD Sales] )
+
+How it works
+Uses your existing [YOYTD Sales] (current YTD – previous YTD) as the numerator.
+Uses [PYTD Sales] as the denominator, representing last year’s baseline.
+DIVIDE() handles division by zero safely — it will return BLANK() if [PYTD Sales] is zero or blank, avoiding errors or misleading output.
+
+Examples
+YTD Sales	PYTD Sales	YOYTD Sales	YOYTD Sales %
+120,000   100,000	    20,000	          20%
+80,000	  100,000	   -20,000	         -20%
+105,000	  0	          105,000	          (blank)
+
+Interpretation:
+
+If current YTD is higher than PYTD → positive growth (e.g., 20%).
+If lower → negative growth (decline).
+If prior year had no sales (zero), the result is blank to avoid a divide-by-zero situation.
+
+Thank you :)
+
