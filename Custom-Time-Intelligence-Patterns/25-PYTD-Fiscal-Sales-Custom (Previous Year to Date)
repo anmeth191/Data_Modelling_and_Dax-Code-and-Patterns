@@ -1,0 +1,53 @@
+Calculates Previous Fiscal Year-To-Date Sales, based on the fiscal calendar structure (e.g., July–June). This is useful when comparing current fiscal performance to the same fiscal period last year.
+
+Code
+PYTD Fiscal Sales = 
+// Get the highest visible fiscal month in the current filter context (e.g., Month 4 = October if fiscal starts in July)
+VAR current_month_filter_context = MAX( 'Date'[Fiscal Month Number] )
+
+// Get the selected fiscal year (e.g., 2025 if current context is FY25)
+VAR current_year_filter_context = SELECTEDVALUE( 'Date'[Fiscal Year Number] )
+
+// Subtract one to get the previous fiscal year
+VAR previous_fiscal_year = current_year_filter_context - 1 
+
+// Calculate the result
+VAR result = 
+    CALCULATE( 
+        // Total sales amount
+        Sales[Sales Amount],
+
+        // Remove all filters from the Date table
+        REMOVEFILTERS('Date'),
+
+        // Apply filter for fiscal months up to and including the current month
+        'Date'[Fiscal Month Number] <= current_month_filter_context,
+
+        // Apply filter for only the previous fiscal year
+        'Date'[Fiscal Year Number] = previous_fiscal_year
+    )
+
+// Return the final value
+RETURN result
+
+How it works
+
+Detects the fiscal month and fiscal year currently visible in the filter context.
+Calculates the previous fiscal year by subtracting 1.
+Clears all filters on the 'Date' table to avoid conflicts.
+
+Reapplies filters to:
+Include all fiscal months up to the current one.
+Include only rows from the previous fiscal year.
+Returns the sales total from that matching period.
+
+Examples
+Assume Fiscal Year starts in July:
+Fiscal Month	Fiscal Year	Filtered Context	PYTD Fiscal Sales
+Oct (4)	FY25	Months 1–4	Sales from Months 1–4 of FY24
+Mar (9)	FY25	Months 1–9	Sales from Months 1–9 of FY24
+
+Interpretation:
+If you're currently viewing YTD for FY25 up to month 4 (October), this measure will return sales for months 1–4 (July–October) of FY24.
+
+Thank you :)
