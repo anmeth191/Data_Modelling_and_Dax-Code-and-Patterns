@@ -1,0 +1,19 @@
+This measure dynamically returns the correct period-over-period (PoP) percentage for Sales depending on the current level of the date hierarchy in the visual:
+
+Code
+POP % Sales =
+SWITCH(
+    TRUE(),
+    ISINSCOPE( 'Date'[Year Month] ), Sales[Sales MOM %],
+    ISINSCOPE( 'Date'[Year Quarter] ), Sales[Sales QOQ %],
+    ISINSCOPE( 'Date'[Year] ), [Sales YOY %]
+)
+
+How It Works
+ISINSCOPE('Date'[Year Month]) checks if the visual is showing data at the month level → returns Month-over-Month %.
+If not, it checks for quarter level with ISINSCOPE('Date'[Year Quarter]) → returns Quarter-over-Quarter %.
+If not, it checks for year level with ISINSCOPE('Date'[Year]) → returns Year-over-Year %.
+No fallback is provided, so visuals without one of these levels in scope will return BLANK.
+This avoids the need for multiple separate measures and ensures the measure adapts based on how the user drills or slices the date hierarchy.
+
+Thank you :)
