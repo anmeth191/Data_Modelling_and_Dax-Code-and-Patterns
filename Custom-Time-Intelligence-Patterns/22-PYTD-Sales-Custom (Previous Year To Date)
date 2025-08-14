@@ -1,0 +1,59 @@
+Calculates Previous Year-To-Date Sales, aligning with the same period as the current year filter. This is useful for performance comparisons where you want to know how sales are doing up to a specific point in time, 
+but for the prior year.
+
+Code
+PYTD Sales = 
+// Get the highest visible month number in the current filter context (e.g., August = 8)
+VAR max_month_in_filter_context = MAX( 'Date'[Month Number] )
+
+// Get the selected year in the current filter context (should be a single year)
+VAR max_year_available_in_filter_context = SELECTEDVALUE( 'Date'[Year] )
+
+// Subtract one year to target the previous year's equivalent period
+VAR previous_year = max_year_available_in_filter_context - 1 
+
+VAR result = 
+    CALCULATE( 
+        // Calculate the total sales amount
+        Sales[Sales Amount],
+
+        // Remove all filters on the Date table to start fresh
+        REMOVEFILTERS('Date'),
+
+        // Reapply a filter for all months up to and including the current month
+        'Date'[Month Number] <= max_month_in_filter_context,
+
+        // Reapply a filter for only the previous year
+        'Date'[Year] = previous_year
+    )
+    
+// Return the calculated result
+RETURN 
+result
+
+How it works
+Detects the current filter context by finding the last visible month and selected year.
+Calculates the previous year to compare to.
+Removes filters on the date table to avoid interference.
+Applies new filters to restrict the data:
+Only months ≤ the current one (e.g., Jan–Aug)
+Only for the previous year
+Returns total sales from that filtered time frame — i.e., Previous YTD.
+
+Examples
+Visual Context:
+
+If a visual shows YTD sales for 2025 up to August, PYTD Sales will show sales from Jan–Aug 2024.
+
+Date Context	Sales Amount	PYTD Sales
+Jan 2025	    10,000	      9,000
+Feb 2025	    22,000	      18,500
+…	             … 	          …
+Aug 2025	    92,000	      86,000
+
+Filter Context:
+Slicer on Year = 2025
+Visual filtered to 'Date'[Month Number] <= 8
+Then PYTD Sales will return total sales from Jan–Aug 2024.
+
+Thank you :)
