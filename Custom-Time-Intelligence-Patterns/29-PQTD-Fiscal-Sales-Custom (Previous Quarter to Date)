@@ -1,0 +1,53 @@
+Calculates Previous Fiscal Quarter-To-Date Sales, aligned to the same position within the quarter from the prior fiscal year.
+This pattern is used when you're tracking progress in fiscal quarters and want to compare it against the equivalent point from last year's same fiscal quarter.
+
+Code
+PQTD Sales Fiscal = 
+// Get the current fiscal month number within the quarter
+VAR current_month_quarter_available = MAX( 'Date'[Fiscal Month In Quarter Number] )
+
+// Get the current fiscal year + quarter key 
+VAR current_year_quarter_available = MAX( 'Date'[Fiscal Year Quarter Number] )
+
+// Subtract one to get the same fiscal quarter from the previous year
+VAR previous_year_quarter = current_year_quarter_available - 1 
+
+// Calculate the sales amount from that period
+VAR results = 
+    CALCULATE( 
+        Sales[Sales Amount], 
+
+        // Remove filters from the Date table to ensure full table visibility
+        REMOVEFILTERS('Date'),
+
+        // Include all fiscal months up to and including the current one in the quarter
+        'Date'[Fiscal Month In Quarter Number] <= current_month_quarter_available,
+
+        // Include only the same fiscal quarter from the previous year
+        'Date'[Fiscal Year Quarter Number] = previous_year_quarter
+    )
+
+RETURN results
+
+How it works
+
+Identifies the current position within the fiscal quarter (e.g., Month 2 of Q3).
+Finds the current fiscal year-quarter key and subtracts 1 to move to the prior year’s same quarter.
+Clears all filters on 'Date' so it can apply custom logic cleanly.
+
+Filters the data to include:
+All fiscal months up to the current one in the quarter.
+Only rows from the previous fiscal quarter (same position).
+
+Returns total sales for that matched slice.
+
+Examples
+Fiscal Year	Quarter	Fiscal Month In Quarter    Sales Amount	  PQTD Sales Fiscal
+FY25	      Q3	    2(Oct)	                   92,000	        83,000
+FY24	      Q3	    2(Oct)	                   83,000	        77,500
+Interpretation:
+
+If you're in the second month of Q3 FY25, this measure pulls the first two months of Q3 FY24.
+Lets you compare QTD progress at the same stage across fiscal years.
+
+Thank you :)
