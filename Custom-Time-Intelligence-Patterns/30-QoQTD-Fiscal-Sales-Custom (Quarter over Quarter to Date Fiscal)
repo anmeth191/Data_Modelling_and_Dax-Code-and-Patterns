@@ -1,0 +1,36 @@
+Calculates the Quarter-over-Quarter To-Date Sales Difference based on fiscal quarters, comparing the current fiscal QTD performance against the same position in the previous fiscal year’s matching quarter.
+
+Code
+QOQTD Fiscal Sales = 
+// Get current fiscal quarter-to-date sales
+VAR current_QTD_Values = [Fiscal QTD Sales]
+
+// Get previous fiscal year's equivalent QTD sales
+VAR previous_year_QTD = [PQTD Sales Fiscal]
+
+// Return the difference if both values are present
+VAR results = 
+    IF(
+        NOT ISBLANK(current_QTD_Values) && NOT ISBLANK(previous_year_QTD),
+        current_QTD_Values - previous_year_QTD
+    )
+
+RETURN results
+
+How it works
+Retrieves current fiscal QTD sales from [Fiscal QTD Sales].
+Retrieves previous year’s QTD for the same fiscal quarter position from [PQTD Sales Fiscal].
+Ensures both values exist (non-blank).
+If valid, returns the delta: current – previous.
+If either value is blank, returns BLANK.
+
+Examples
+Fiscal Year	Quarter	Fiscal QTD Sales	PQTD Sales Fiscal	QOQTD Fiscal Sales
+FY25	      Q2	    110,000	          96,000	          14,000
+FY24	      Q2	    96,000	          89,000	          7,000
+Interpretation:
+
+Positive values reflect fiscal QTD growth over the same quarter last year.
+Blank values usually mean insufficient data in one of the periods.
+
+Thank you :)
