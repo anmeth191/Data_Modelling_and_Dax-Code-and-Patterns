@@ -1,0 +1,41 @@
+Returns the total sales for the previous calendar year, matching the current filter context by year. Useful for comparing this year’s performance against the full results from last year.
+
+Code
+PYC Sales = 
+// Get the currently selected year in the filter context
+VAR current_year_number = SELECTEDVALUE( 'Date'[Year] )
+
+// Subtract one to get the previous calendar year
+VAR previous_year_number = current_year_number - 1
+
+// Calculate sales for the previous year
+VAR result = 
+    CALCULATE( 
+        Sales[Sales Amount], 
+
+        // Remove all filters from the Date table
+        REMOVEFILTERS( 'Date' ), 
+
+        // Apply filter for the previous year
+        'Date'[Year] = previous_year_number
+    )
+
+RETURN result
+
+How it works
+Detects the current year in the filter context.
+Calculates the previous year by subtracting 1.
+Clears all filters on 'Date' to ensure accurate application.
+Reapplies a filter for the full previous year.
+Returns total sales for that year.
+
+Examples
+Year (in context)	 Sales Amount	PYC Sales
+2025	             135,000	    128,000
+2024	             128,000	    117,500
+
+Interpretation:
+If the visual shows 2025, this measure returns sales from 2024.
+Use this to compare current year totals side-by-side with last year’s full-year result.
+
+Thank you :)
