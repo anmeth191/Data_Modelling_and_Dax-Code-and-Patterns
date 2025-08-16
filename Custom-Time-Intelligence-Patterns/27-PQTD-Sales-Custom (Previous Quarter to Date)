@@ -1,0 +1,53 @@
+Calculates Previous Quarter-To-Date Sales, comparing the same position within the quarter from the prior year. This is useful for quarter-over-quarter analysis aligned by position.
+
+Code
+PQTD Sales = 
+// Get the last month number in the current quarter's filter context
+VAR last_month_in_quarter_available = MAX( 'Date'[Month In Quarter Number] )
+
+// Get the current quarter's Year-Quarter identifier 
+VAR last_year_quarter_available = MAX( 'Date'[Year Quarter Number] )
+
+// Get the previous year's equivalent quarter
+VAR previous_year_quarter_available = last_year_quarter_available - 1 
+
+// Calculate the sales amount for the previous QTD period
+VAR result = 
+    CALCULATE(
+        // Evaluate sales amount
+        [Sales Amount],
+
+        // Remove all filters from the Date table so new filters can be applied
+        REMOVEFILTERS( 'Date' ),
+
+        // Filter to include all months up to and including the current position in the quarter
+        'Date'[Month In Quarter Number] <= last_month_in_quarter_available,
+
+        // Filter to include only the same quarter from the previous year
+        'Date'[Year Quarter Number] = previous_year_quarter_available
+    )
+
+RETURN result
+
+How it works
+
+Finds the latest month number within the current quarter, based on 'Date'[Month In Quarter Number].
+Retrieves the current Year-Quarter ID (e.g., 2025Q3).
+Subtracts 1 to identify the previous year’s matching quarter (e.g., 2024Q3).
+Removes all filters from 'Date' to reset the context.
+
+Applies new filters to get:
+All months up to the same relative point in the quarter.
+Only rows from the previous year's matching quarter.
+Returns the sales total from that prior QTD period.
+
+Examples
+Year	Quarter	Month In Quarter	Sales Amount	PQTD Sales
+2025	Q3	    2 (Aug)	          65,000	      58,000
+2024	Q3	    2 (Aug)	          58,000	      51,000
+Interpretation:
+
+If the visual is showing sales for the second month of Q3, PQTD Sales gives you the sales from second month of Q3 in the previous year.
+Perfect for side-by-side visual comparisons of current QTD vs. last year's QTD at the same point.
+
+Thank you :)
