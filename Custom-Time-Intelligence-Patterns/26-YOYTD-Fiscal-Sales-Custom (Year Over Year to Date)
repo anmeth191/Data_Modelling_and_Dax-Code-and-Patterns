@@ -1,0 +1,39 @@
+Calculates the Year-Over-Year Fiscal Year-To-Date Sales Difference — comparing current fiscal YTD sales to the same fiscal period in the prior year. 
+Useful for analyzing fiscal-year-based performance change over time.
+
+Code
+YOYTD Fiscal Sales = 
+// Get current fiscal YTD sales
+VAR current_ytd = [YTD Sales Fiscal] 
+
+// Get previous fiscal YTD sales
+VAR previous_ytd = [PYTD Fiscal Sales] 
+
+// Return the difference if both values exist
+VAR results = 
+    IF(
+        NOT ISBLANK(current_ytd) && NOT ISBLANK(previous_ytd),
+        current_ytd - previous_ytd
+    )
+
+RETURN results
+
+How it works
+
+Pulls the current fiscal YTD sales using [YTD Sales Fiscal].
+Retrieves the previous fiscal YTD sales from [PYTD Fiscal Sales].
+Checks that both are not blank — protects against missing or incomplete data.
+If valid, calculates the difference: current - previous.
+Returns the result, or BLANK if one of the values is missing.
+
+Examples
+FY	  Fiscal Month	YTD Sales Fiscal	PYTD Fiscal Sales	YOYTD Fiscal Sales
+FY25	Oct (4)	      180,000	          150,000	           30,000
+FY24	Oct (4)	      150,000	          135,000	           15,000
+FY23	Oct (4)	      135,000	          (blank)	           (blank)
+Interpretation:
+
+A value of 30,000 means you're up 30K compared to the same fiscal period last year.
+If PYTD is missing (e.g., no data for FY23), result is blank.
+
+Thank you :)
