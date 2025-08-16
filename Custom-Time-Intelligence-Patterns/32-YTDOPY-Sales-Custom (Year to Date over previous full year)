@@ -1,0 +1,39 @@
+Calculates the difference between current Year-To-Date Sales and the full sales of the previous calendar year. 
+This is helpful when comparing current partial-year performance against last year’s total — a common metric in fast-growth or budget-sensitive environments.
+
+Code
+YTDOPY Sales =
+ // Get current year-to-date sales
+VAR current_sales_ytd = [YTD Sales]
+
+// Get total sales for the full previous year
+VAR previous_year_full_sales = [PYC Sales]
+
+// Return the difference if both values exist
+VAR results = 
+    IF(
+        NOT ISBLANK(current_sales_ytd) && NOT ISBLANK(previous_year_full_sales),
+        current_sales_ytd - previous_year_full_sales
+    )
+
+RETURN results
+
+How it works
+Pulls current YTD sales from [YTD Sales].
+Pulls full-year sales from the previous calendar year using [PYC Sales].
+Checks that both values are present (non-blank).
+Calculates the difference: YTD – Previous Full Year.
+ Returns that result — or blank if either side is missing.
+
+Examples
+Year	YTD Sales	 PYC Sales	YTDOPY Sales
+2025	90,000	   135,000	  -45,000
+2024	110,000    128,000	  -18,000
+2023	140,000	   117,500	  +22,500
+
+Interpretation:
+A negative result means you haven't yet matched last year's total.
+A positive result means you've already exceeded the prior year — before the current year even ended.
+Useful for real-time performance dashboards that highlight "Are we beating last year yet?"
+
+Thank you :)
