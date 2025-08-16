@@ -1,0 +1,38 @@
+Calculates the Quarter-over-Quarter To-Date Sales Difference, comparing current Quarter-To-Date sales against the same relative period in the previous year's matching quarter.
+This reveals how quarter-to-date performance is trending compared to last year at the same point in time.
+
+Code
+QOQTD Sales = 
+// Get current quarter-to-date sales
+VAR current_qtd_sales = [QTD Sales]
+
+// Get previous year's same-quarter-to-date sales
+VAR previous_year_qtd_sales = [PQTD Sales]
+
+// Return the difference if both values exist
+VAR results = 
+    IF(
+        NOT ISBLANK(current_qtd_sales) && NOT ISBLANK(previous_year_qtd_sales),
+        current_qtd_sales - previous_year_qtd_sales
+    )
+
+RETURN results
+
+How it works
+Pulls the current QTD sales using [QTD Sales].
+Retrieves the previous year’s QTD equivalent from [PQTD Sales].
+Checks for non-blank values on both sides.
+If both are available, calculates the delta: current – previous.
+Returns the result, or BLANK() if either input is missing.
+
+Examples
+Year	Quarter	QTD Sales	PQTD Sales	QOQTD Sales
+2025	Q3	    90,000	  82,000	    8,000
+2024	Q3	    82,000	  76,000	    6,000
+2023	Q3	    76,000	  (blank)	    (blank)
+
+Interpretation:
+A positive result means you're outperforming the same quarter’s position from the prior year.
+A blank result indicates insufficient data (e.g., no PQTD match for that context).
+
+Thank you :)
