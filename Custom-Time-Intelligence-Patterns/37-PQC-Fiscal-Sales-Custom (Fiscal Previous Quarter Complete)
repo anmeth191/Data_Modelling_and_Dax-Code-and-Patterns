@@ -1,0 +1,46 @@
+This measure returns sales from the previous fiscal quarter, based on the current fiscal quarter in context.
+This is the fiscal version of a Quarter-over-Quarter base measure, useful in organizations with non-calendar fiscal calendars (e.g., July–June).
+
+Code
+PQC Fiscal Sales = 
+// Get the current fiscal Year-Quarter key 
+VAR current_fiscal_year_quarter_number = SELECTEDVALUE( 'Date'[Fiscal Year Quarter Number] )
+
+// Subtract 1 to get the previous fiscal quarter (e.g., 20253 - 1 = 20252)
+VAR previous_fiscal_year_quarter_number = current_fiscal_year_quarter_number - 1 
+
+// Calculate total sales for the previous fiscal quarter
+VAR results = 
+    CALCULATE( 
+        [Sales Amount], 
+
+        // Remove all filters on the Date table
+        REMOVEFILTERS('Date'),
+
+        // Apply filter for only the previous fiscal quarter
+        'Date'[Fiscal Year Quarter Number] = previous_fiscal_year_quarter_number
+    )
+
+RETURN 
+results
+
+How it works
+Grabs the current fiscal quarter key (e.g., 20253 for Q3 of FY2025).
+Subtracts 1 to get the prior fiscal quarter key.
+Removes existing filters on the Date table to allow full access to past data.
+Applies a new filter to target only the previous fiscal quarter.
+Returns the total sales for that quarter.
+
+Examples
+Fiscal Year	 Fiscal Quarter	 Current Quarter Sales	PQC Fiscal Sales (Previous Quarter)
+FY25	       Q3	             88,000	                95,000
+FY25	       Q2	             95,000	                101,000
+FY25	       Q1	             101,000	              92,000
+
+Interpretation:
+When the current context is Q3 FY25, this measure returns sales from Q2 FY25.
+For Q1 FY25, it returns Q4 FY24 (assuming Fiscal Year Quarter Number rolls over cleanly).
+Ideal for building fiscal quarter-over-quarter growth metrics.
+
+Thank you :)
+
