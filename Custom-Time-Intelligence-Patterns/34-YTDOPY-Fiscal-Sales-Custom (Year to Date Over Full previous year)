@@ -1,0 +1,42 @@
+This measure calculates the Year-To-Date Over Previous Fiscal Year Sales Difference — comparing current fiscal YTD sales against the full sales from the previous fiscal year. 
+Ideal for tracking whether the current year has already outpaced last year’s total performance.
+
+Code
+YTDOPY Fiscal Sales = 
+// Get current fiscal year-to-date sales
+VAR current_fiscal_ytd = [YTD Sales Fiscal]
+
+// Get full previous fiscal year sales
+VAR previous_full_sales = [PYC Fiscal Sales]
+
+// Return the difference if both values exist
+VAR results = 
+//Validate if both numbers are not blank so the division would not be blank or error  
+  IF(
+        NOT ISBLANK(current_fiscal_ytd) && NOT ISBLANK(previous_full_sales),
+        current_fiscal_ytd - previous_full_sales
+    )
+
+RETURN 
+results
+
+How it works
+
+Grabs the current fiscal YTD value from [YTD Sales Fiscal].
+Pulls the full prior fiscal year’s sales from [PYC Fiscal Sales].
+Ensures both values are valid (not blank).
+Subtracts previous year’s full total from current YTD.
+Returns the result, or BLANK if either measure isn’t available.
+
+Examples
+Fiscal Year	YTD Sales Fiscal	PYC Fiscal Sales	YTDOPY Fiscal Sales
+FY25	      260,000	          220,000	          +40,000
+FY24	      198,000	          205,000	          -7,000
+FY23	      210,000	          (blank)	          (blank)
+
+Interpretation:
+Positive result: current fiscal YTD has already passed last year’s total.
+Negative result: still behind last year’s full total — good for early-in-year pacing.
+Blank: likely due to missing data in either YTD or prior fiscal year.
+
+Thank you :)
