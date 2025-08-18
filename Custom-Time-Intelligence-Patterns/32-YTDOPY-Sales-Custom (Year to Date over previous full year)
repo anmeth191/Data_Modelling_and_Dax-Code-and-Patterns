@@ -27,8 +27,8 @@ Calculates the difference: YTD – Previous Full Year.
 
 Examples
 Year	YTD Sales	 PYC Sales	YTDOPY Sales
-2025	90,000	   135,000	  -45,000
-2024	110,000    128,000	  -18,000
+2025	90,000	    110,000	  -20,000
+2024	110,000    140,000	  -30,000
 2023	140,000	   117,500	  +22,500
 
 Interpretation:
