@@ -1,0 +1,53 @@
+This measure calculates the Previous Year’s Moving Annual Total (PYMAT).
+It looks at the same 12-month rolling window from one year ago, which is critical when doing year-over-year comparisons for moving totals — like MAT vs PYMAT, or MAT % Growth.
+
+Code 
+PYMAT Sales = 
+// Get the months to include in the rolling period (12 months for annual total)
+var months_in_range = 12
+
+// Get the month that is 12 months before the current one
+// Example: If current = 2025-08 (202508), this becomes 202408
+var current_filter_context_month = MAX('Date'[Year Month Number]) - months_in_range
+
+// Calculate the start of the rolling window (12 months total)
+// Example: 202408 - 12 + 1 = 202309 → starts in Sep 2023
+var first_month_of_period = current_filter_context_month - months_in_range + 1
+
+// Calculate sales over the previous 12-month window
+var results = CALCULATE(
+    [Sales Amount],
+    REMOVEFILTERS('Date'),
+    'Date'[Year Month Number] >= first_month_of_period 
+        && 'Date'[Year Month Number] <= current_filter_context_month
+)
+
+return 
+    result
+
+How it works
+The measure subtracts 12 months from the current Year Month Number to find the end of the previous rolling window.
+It then subtracts another 11 months (plus 1) to get the start of that 12-month window.
+REMOVEFILTERS('Date') ensures the new date range is applied cleanly.
+Finally, it calculates total sales between first_month_of_period and current_filter_context_month, giving the rolling total for the same period one year ago.
+
+Example
+
+Assume current filter context is Aug 2025 (202508):
+
+current_filter_context_month = 202508 - 12 = 202408
+
+first_month_of_period = 202408 - 12 + 1 = 202309
+
+So, the rolling window is Sep 2023 to Aug 2024, and PYMAT Sales returns the sales total for that period.
+
+Month	Year  Month Number	Sales Amount
+Sep 2023    202309	      8,400
+Oct 2023	  202310       	9,100
+...	        ...         	...
+Aug 2024	  202408	      9,800
+
+If this 12-month total is 112,000, and your current MAT Sales for 2024–2025 is 125,000 — that would signal growth.
+Comparing MAT vs PYMAT gives you trailing-period trend insight with seasonal smoothing.
+
+Thank you :)
