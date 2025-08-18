@@ -1,0 +1,40 @@
+Calculates the Quarter-To-Date Over Previous Full Quarter Sales Difference. It compares sales so far in the current quarter against the entire previous quarter. 
+This is helpful for checking whether current performance is catching up to or surpassing the last quarter's total.
+
+Code
+QTDOPQ Sales = 
+// Get current quarter-to-date sales
+VAR current_qtd_values = [QTD Sales]
+
+// Get full sales from the previous quarter
+VAR previous_full_quarter_values = [PQC Sales]
+
+// Return the difference if both values exist
+VAR results = 
+    IF(
+        NOT ISBLANK(current_qtd_values) && NOT ISBLANK(previous_full_quarter_values),
+        current_qtd_values - previous_full_quarter_values
+    )
+
+RETURN 
+results
+
+How it works
+Pulls current QTD sales using [QTD Sales].
+Retrieves the full previous quarter’s sales using [PQC Sales].
+If both values are non-blank, subtracts previous from current.
+Returns the result — or blank if either measure is unavailable.
+
+Examples
+| Quarter | Current QTD Sales | PQC Sales (Previous Quarter) | QTDOPQ Sales |
+| ------- | ----------------- | ---------------------------- | ------------ |
+| Q2 2024 | 72,000            | 95,000                       | -23,000      |
+| Q1 2024 | 95,000            | 112,000                      | -17,000      |
+| Q4 2023 | 112,000           | 98,000                       | +14,000      |
+
+Interpretation:
+A negative result shows that current QTD performance is still trailing the last full quarter.
+A positive result means you've already surpassed last quarter’s total — before this one is even over.
+Useful for growth pacing and executive dashboards where the question is: “Are we beating last quarter yet?”
+
+Thank you :)
