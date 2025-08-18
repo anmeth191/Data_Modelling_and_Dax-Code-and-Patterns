@@ -1,0 +1,40 @@
+Calculates the Fiscal Quarter-To-Date Over Previous Full Fiscal Quarter Sales Difference.
+It compares current QTD sales to the full sales of the previous fiscal quarter, which helps track whether the current quarter is on pace to outperform the last one.
+
+Code
+QTDOPQ Fiscal Sales = 
+// Get current fiscal quarter-to-date sales
+VAR current_fiscal_sales_qtd = [Fiscal QTD Sales]
+
+// Get full sales from the previous fiscal quarter
+VAR previous_full_fiscal_quarter = [PQC Fiscal Sales]
+
+// Return the difference if both values exist
+VAR results = 
+    IF(
+        NOT ISBLANK(current_fiscal_sales_qtd) && NOT ISBLANK(previous_full_fiscal_quarter),
+        current_fiscal_sales_qtd - previous_full_fiscal_quarter
+    )
+
+RETURN results
+
+How it works
+Pulls current fiscal QTD sales from [Fiscal QTD Sales].
+Retrieves full previous fiscal quarter sales from [PQC Fiscal Sales].
+Ensures both values exist (non-blank).
+Returns the difference between current QTD and the full previous quarter.
+If either is blank, returns BLANK to avoid misleading output.
+
+Examples
+Fiscal Year	Fiscal Quarter	Fiscal QTD Sales	PQC Fiscal Sales	QTDOPQ Fiscal Sales
+FY25	      Q3	            88,000	          95,000	          -7,000
+FY25	      Q2	            95,000	          101,000	          -6,000
+FY25	      Q1	            101,000	          92,000	          +9,000
+
+Interpretation:
+
+A negative value means current QTD is still trailing last quarter’s full sales.
+A positive value means current QTD has already outperformed the full previous fiscal quarter.
+Useful for tracking quarter pacing and triggering performance alerts in dashboards.
+
+Thank you :)
