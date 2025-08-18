@@ -1,0 +1,57 @@
+This measure calculates the Moving Annual Total (MAT) — the total sales over the most recent 12-month rolling window, ending in the current month.
+It’s a useful way to smooth seasonality and spot long-term trends by always including the latest 12 months of data.
+
+Code 
+MAT Sales = 
+// In this case, since it's an Annual Total, we use 12 months
+var months_in_range = 12
+
+// Capture the current month in the filter context as a numeric YYYYMM value
+var current_filter_context_month = MAX('Date'[Year Month Number])
+
+/*
+  Find the first month in the rolling 12-month window.
+  Example:
+    If the current month is 2025-08 (202508),
+    then 202508 - 12 = 202408,
+    and we add 1 → 202409 to begin the rolling period.
+    This ensures we count exactly 12 months, including the current.
+*/
+var first_month_of_the_window = current_filter_context_month - months_in_range + 1
+
+// Calculate the total sales from the first month in range to the current
+var result = CALCULATE( 
+    [Sales Amount],
+  //remove filters in the Date table so calculate can see all the dates 
+    REMOVEFILTERS('Date'), 
+//reintroduce filters where the dates are between the first month and the last month which is the current filter context
+    'Date'[Year Month Number] >= first_month_of_the_window 
+        && 'Date'[Year Month Number] <= current_filter_context_month
+)
+
+return 
+    result
+
+How it works
+
+The variable months_in_range defines the size of the window (12 months).
+Year Month Number is expected to be a continuous numeric field like 202508 (for August 2025).
+The range starts 11 months before the current one, to ensure exactly 12 months are summed (inclusive).
+REMOVEFILTERS('Date') allows the CALCULATE function to apply a fresh date range filter across the entire table.
+Sales are aggregated across this calculated 12-month window.
+
+Example
+
+Assume the current filter context is August 2025 (202508):
+
+Month	Year Month Number	Sales Amount
+Sep 2024	 202409	      9,000
+Oct 2024	 202410	      8,500
+...	       ...	        ...
+Jul 2025	 202507	      10,200
+Aug 2025	 202508	      9,800
+
+The total MAT Sales for Aug 2025 would be the sum of these 12 months (from Sep 2024 to Aug 2025).
+If any month is missing, the result will underrepresent the full MAT unless handled with completeness rules in the data model.
+
+Thank you :)
