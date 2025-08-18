@@ -1,0 +1,45 @@
+Calculates the sales total for the previous calendar quarter, based on the current filter context. This is useful for quarter-over-quarter comparisons where the business uses standard (non-fiscal) quarters.
+
+Code
+PQC Sales = 
+// Get the current Year-Quarter key 
+VAR current_year_and_quarter = SELECTEDVALUE( 'Date'[Year Quarter Number] )
+
+// Subtract 1 to get the previous quarter (e.g., 20242 - 1 = 20241)
+VAR previous_quarter_number = current_year_and_quarter - 1 
+
+// Calculate total sales for the previous quarter
+VAR results = 
+    CALCULATE( 
+        [Sales Amount], 
+
+        // Clear any filters on the Date table
+        REMOVEFILTERS('Date'),
+
+        // Reapply a filter for only the previous quarter
+        'Date'[Year Quarter Number] = previous_quarter_number
+    )
+
+RETURN 
+results
+
+How it works
+Pulls the current Year-Quarter key from the filter context (like 20242 for Q2 2024).
+Subtracts 1 to calculate the previous quarter’s key (20241 for Q1 2024).
+Clears filters from 'Date' to ensure clean logic.
+Applies a new filter for only the previous quarter using the Year Quarter Number.
+Returns total sales from that quarter.
+
+Examples
+Year	Quarter	Year Quarter Number	Current Quarter Sales	PQC Sales (Previous Quarter)
+2024	Q2	    20242	              102,000	              95,000
+2024	Q1	    20241	              95,000	              110,000
+2023	Q4	    20234	              110,000	              98,000
+
+Interpretation:
+
+For Q2 2024, the current sales are 102,000; the PQC Sales measure returns Q1 2024 = 95,000.
+For Q1 2024, it pulls Q4 2023 = 110,000.
+This enables quarter-over-quarter comparisons with accurate temporal alignment.
+
+Thank you :)
