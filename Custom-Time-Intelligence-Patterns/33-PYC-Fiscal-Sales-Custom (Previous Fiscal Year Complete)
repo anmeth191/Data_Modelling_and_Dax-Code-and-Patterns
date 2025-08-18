@@ -1,0 +1,43 @@
+This measure returns total sales for the previous fiscal year, regardless of current filters. It’s used to compare full-year fiscal performance against the previous fiscal period
+— especially important for businesses that operate on non-calendar fiscal calendars.
+
+Code
+PYC Fiscal Sales = 
+// Get the current fiscal year from the filter context
+VAR current_fiscal_year = SELECTEDVALUE( 'Date'[Fiscal Year Number] )
+
+// Subtract one to get the previous fiscal year
+VAR previous_fiscal_year = current_fiscal_year - 1 
+
+// Calculate sales for the previous fiscal year
+VAR results = 
+    CALCULATE( 
+        Sales[Sales Amount],
+
+        // Remove all filters from the Date table to reset context , the calculat can see all the dates in the Date Tables
+        REMOVEFILTERS('Date'),
+
+        // Apply a filter to keep only the previous fiscal year
+        'Date'[Fiscal Year Number] = previous_fiscal_year 
+    )
+
+RETURN
+ results
+
+How it works
+Captures the current fiscal year from the filter context (e.g., FY25).
+Subtracts one to get the prior fiscal year (e.g., FY24).
+Clears any date filters to ensure a clean calculation base.
+Reapplies a filter for the full previous fiscal year only.
+Returns the total sales from that prior fiscal year.
+
+Examples
+Fiscal Year (in context)	Sales Amount	PYC Fiscal Sales
+FY25	                    220,000	      205,000
+FY24	                    205,000	      192,000
+
+Interpretation:
+If FY25 is selected in a slicer or visual, this measure returns FY24’s total sales.
+This is your baseline when evaluating fiscal-year-over-fiscal-year trends.
+
+Thank you :) 
