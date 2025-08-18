@@ -30,8 +30,8 @@ Returns the result, or BLANK if either measure isn’t available.
 
 Examples
 Fiscal Year	YTD Sales Fiscal	PYC Fiscal Sales	YTDOPY Fiscal Sales
-FY25	      260,000	          220,000	          +40,000
-FY24	      198,000	          205,000	          -7,000
+FY25	      260,000	          198,000	          +62,000
+FY24	      198,000	          210,000	          -12,000
 FY23	      210,000	          (blank)	          (blank)
 
 Interpretation:
