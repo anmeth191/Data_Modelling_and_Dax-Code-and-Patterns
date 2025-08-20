@@ -1,0 +1,70 @@
+This measure calculates the 3-month moving average of [Sales Amount], based on the current month in the filter context. It's useful for smoothing trends and eliminating short-term fluctuations in sales analysis.
+
+The Code
+
+AVG 3M Sales = 
+// window of the data to calculate the average — in this case, 3 months
+var MonthsInRange = 3 
+
+// capture the current month number in the filter context
+var Current_filter_context_month = MAX('Date'[Year Month Number])
+
+// find the first month of the window based on the current month in context
+// for example: current month is 202506 → go 3 months back = 202503 → add 1 = 202504
+// so we include 202504, 202505, 202506
+var first_month_of_range = Current_filter_context_month - MonthsInRange + 1 
+
+// create a virtual table of those 3 months: 202504, 202505, 202506
+var period_3m_virtual_table = 
+    FILTER(
+        ALL('Date'[Year Month Number]),
+        'Date'[Year Month Number] >= first_month_of_range && 
+        'Date'[Year Month Number] <= Current_filter_context_month
+    )
+
+var result = 
+    IF(
+        // validate the virtual table — if it has 3 rows or more, then go ahead
+        COUNTROWS(period_3m_virtual_table) >= MonthsInRange,
+
+        /* 
+        This part is critical — here's how it works:
+
+        We ask AVERAGEX to iterate over our virtual table that holds the 3 months.
+        But without CALCULATE and REMOVEFILTERS, the current filter context (let’s say June 2025)
+        would still be applied when AVERAGEX runs — so all 3 rows in the table would still behave like 202506.
+
+        That would return the same result 3 times, which ruins the average.
+
+        CALCULATE with REMOVEFILTERS('Date') resets the context so each row in the virtual table
+        (April, May, and June) can now be evaluated properly using its own context.
+        */
+        CALCULATE(
+            AVERAGEX(period_3m_virtual_table, [Sales Amount]),
+            REMOVEFILTERS('Date')
+        )
+    )
+
+return 
+    result
+
+How It Works
+
+Step 1: Determines the current month in the filter context.
+Step 2: Builds a virtual table with the 3-month range (current + previous 2).
+Step 3: Uses AVERAGEX to iterate over that table and calculate [Sales Amount] for each.
+Step 4: Uses REMOVEFILTERS to break out of the current filter context so that all months are evaluated independently.
+
+Example
+Imagine we’re in 2025-06. The calculation includes:
+Year Month	Sales Amount
+2025-04	    100,000
+2025-05	    110,000
+2025-06	    120,000
+
+Result: (100,000 + 110,000 + 120,000) / 3 = 110,000
+
+If any of the months are missing or not visible in the context, the measure won't return a result (thanks to the IF check on COUNTROWS).
+
+Thank you :) 
+
