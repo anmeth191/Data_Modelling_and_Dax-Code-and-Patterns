@@ -1,0 +1,37 @@
+This measure calculates the Moving Annual Total Growth (MATG) — the year-over-year growth of sales over a rolling 12-month period. 
+It compares the current 12-month total (MAT Sales) with the equivalent 12-month period from the prior year (PYMAT Sales).
+
+It’s useful for understanding long-term sales trends while smoothing out short-term volatility.
+
+DAX Code
+MATG Sales = 
+//get the current Moving Annual Total
+var current_MAT_Value = [MAT Sales]
+//get the previous MAT value
+var previous_MAT_Value = [PYMAT Sales]
+//validate both numbers are not blank so the number is not blank or invalid
+var result = IF(
+                NOT ISBLANK( current_MAT_Value ) && NOT ISBLANK( previous_MAT_Value ), 
+                current_MAT_Value - previous_MAT_Value 
+              )
+return 
+ result
+
+How it works
+
+[MAT Sales] returns the total sales for the last 12 months, ending in the current month in filter context.
+[PYMAT Sales] returns the total sales for the same 12-month span, but shifted back one full year.
+The measure subtracts the prior year’s MAT from the current MAT, producing the change in total sales over one year.
+IF ensures the calculation only happens if both values are available, avoiding incorrect or misleading blanks.
+
+Example
+Let’s assume the current filter context is August 2025.
+
+[MAT Sales] (Sept 2024 to Aug 2025) = 1,080,000
+[PYMAT Sales] (Sept 2023 to Aug 2024) = 996,000
+
+Then:
+MATG Sales = 1,080,000 - 996,000 = 84,000
+This means the business grew by 84,000 in sales over the trailing 12-month period compared to the same period last year.
+
+Thank you :) 
