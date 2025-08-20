@@ -1,0 +1,76 @@
+This DAX pattern calculates the 12-month moving average of sales up to and including the current month in the filter context. 
+It’s used for smoothing seasonality and spotting trends by averaging the last 12 months' sales performance.
+
+The Code
+AVG 12M Sales = 
+// Set the rolling window to 12 months
+var MonthsInRange = 12 
+
+// Capture the current month in the filter context
+var Current_filter_context_month = MAX('Date'[Year Month Number])
+
+// Determine the first month in the 12-month window
+var first_month_of_range = Current_filter_context_month - MonthsInRange + 1 
+
+// Create a virtual table of 12 months ending in the current one
+var period_12m_virtual_table = 
+    FILTER(
+        ALL('Date'[Year Month Number]),
+        'Date'[Year Month Number] >= first_month_of_range &&
+        'Date'[Year Month Number] <= Current_filter_context_month
+    )
+
+var result = 
+    IF(
+        // Ensure we have at least 12 months in the virtual table
+        COUNTROWS(period_12m_virtual_table) >= MonthsInRange,
+
+        /* This part is critical:
+        
+        Even though we build a virtual table of 12 months, the current filter context
+        (from the visual) is still "locked" to one month. If we don’t use REMOVEFILTERS,
+        then [Sales Amount] will only evaluate in the current month — not the other 11.
+
+        CALCULATE with REMOVEFILTERS removes that lock, so AVERAGEX can see and evaluate
+        [Sales Amount] properly for all 12 months.
+        */
+        CALCULATE(
+            AVERAGEX(period_12m_virtual_table, [Sales Amount]),
+            REMOVEFILTERS('Date')
+        )
+    )
+
+return 
+    result
+
+How it works
+You define a 12-month window ending in the current month.
+You create a virtual table representing those 12 months using FILTER and ALL().
+You use AVERAGEX to iterate over that table.
+REMOVEFILTERS is used to remove the existing filter context from visuals or slicers so the sales can be evaluated for the entire 12-month range.
+
+Example
+
+Suppose you’re currently in August 2025:
+Current_filter_context_month = 202508
+MonthsInRange = 12
+
+The first month in the range becomes:
+202508 - 12 + 1 = 202409
+
+The virtual table contains:
+202409, 202410, ..., 202508 (12 months)
+
+Let’s say your [Sales Amount] per month for that period is:
+
+Month	Sales
+Sep 2024	9,500
+Oct 2024	10,100
+...	...
+Aug 2025	11,800
+
+Then:
+AVG 12M Sales = AVERAGE of those 12 sales values ≈ 10,420
+
+Thank you :) 
+
