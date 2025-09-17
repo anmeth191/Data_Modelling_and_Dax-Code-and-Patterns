@@ -1,0 +1,82 @@
+# Power BI Aggregation Awareness with SQL Server
+
+This repository documents a working setup of Power BI's Aggregation Awareness feature using SQL Server as the source in **DirectQuery mode**. 
+It’s built to help accelerate report performance when working with large datasets by leveraging pre-aggregated Import tables.
+
+## ⚠️ Key Considerations
+
+* ✅ **SQL Server must be brought in using DirectQuery mode.** Do **not** choose Import mode for the main fact table when starting the model.
+* ❌ **You cannot switch a table from Import back to DirectQuery.** Once imported, the storage mode is locked.
+* 💡 Dimensions can be set to **Dual** mode for flexibility and performance.
+
+---
+
+## 💼 Business Scenario
+
+You have a large Fact Sales table and need to accelerate common aggregations such as `SUM(OrderQty)` and `SUM(LineTotal)` grouped by product, month, or customer.
+This is achieved by creating an aggregated version of the fact table at a higher grain (e.g. by ProductKey and Month) and storing it in Import mode.
+
+## 🧱 Model Setup
+
+### 1. Data Sources
+
+* **Fact Table**: `FACT_Table` – brought in as DirectQuery
+* **Aggregated Table**: `FACT_Table_Agg_Awareness` – Import mode
+* **Dimension Tables**:
+
+  * `DIM_Product`
+  * `DIM_Customers`
+  * `DIM_Shipment`
+  * All set to **Dual** mode for flexibility
+
+### 2. Aggregation Table Configuration
+
+In `Manage Aggregations`, define the mapping:
+
+| Aggregation Column | Summarization | Detail Table | Detail Column |
+| ------------------ | ------------- | ------------ | ------------- |
+| Line Total         | Sum           | FACT\_Table  | LineTotal     |
+| Order Qty          | Sum           | FACT\_Table  | OrderQty      |
+| ProductKey         | GroupBy       | FACT\_Table  | ProductKey    |
+
+### 3. Relationships
+
+* Ensure the aggregation table has matching relationships (e.g. ProductKey → DIM\_Product).
+* Hide keys in the main fact table when possible.
+
+## 🔎 Testing in DAX Studio
+
+Use DAX Studio to confirm if the aggregation table is hit:
+
+1. Open DAX Studio with your Power BI model.
+2. Go to **All Queries** tab.
+3. Hover over a visual in Power BI and click **Analyze This Visual**.
+4. Look for the black dot ● on the query. If it's black, the aggregation table was used. If it's white, it's a miss.
+
+## 🧪 Gotchas and Lessons Learned
+
+* Changing column data types (e.g. OrderQty) must match between detail and agg tables.
+* Dual mode enables visuals to use Import data when available.
+* All columns used in aggregations must match exactly in both data type and relationships.
+* Avoid using columns in visuals that aren’t covered by the aggregation — they will force a fallback to the DirectQuery fact table.
+
+## 🧰 Tools
+
+* Power BI Desktop
+* SQL Server (as the DirectQuery source)
+* DAX Studio (to validate aggregation hits)
+
+## ✅ Success Confirmation
+
+When visuals use aggregated fields only (e.g., Product Name and Order Qty), they will query the Import-mode aggregation table instead of the DirectQuery table — significantly boosting performance.
+
+---
+
+## 📌 Next Steps
+
+* [ ] Add more pre-aggregated tables (e.g. by CustomerKey, Month)
+* [ ] Build a tabular editor script for validation
+* [ ] Extend this to include row-level security scenarios
+
+Contributions welcome!
+Thank you :) !
