@@ -1,0 +1,109 @@
+Power BI Parent-Child Hierarchy 
+
+This repository demonstrates how to implement a Parent-Child hierarchy using DAX functions in Power BI.
+The example focuses on a simple organizational structure but is designed to scale to Row-Level Security (RLS) applications.
+
+We use a mock organization chart where "Jane" is the CEO, and other employees report directly or indirectly to her through multiple levels:
+
+Jane (CEO)
+├── John
+│ ├── Jack
+│ │ └── William
+│ └── Sarah
+│ └── Melanie
+└── Mariah
+└── George
+
+The source table consists of three columns: `EmployeeID`, `EmployeeName`, and `ManagerID`. Each row in the table references its manager through the `ManagerID`, forming a recursive relationship.
+
+| EmployeeID | EmployeeName | ManagerID |
+|------------|--------------|-----------|
+| 1          | Jane         | *(null)*  |
+| 2          | John         | 1         |
+| 3          | Mariah       | 1         |
+| 4          | Jack         | 2         |
+| 5          | Sarah        | 2         |
+| 6          | George       | 3         |
+| 7          | William      | 4         |
+| 8          | Melanie      | 5         |
+
+To model this hierarchy, we start by generating a `Path` column using the `PATH()` function:
+
+
+Path = PATH(EmployeeID, ManagerID)
+This function walks from the current employee up to the root and produces a pipe-separated string representing their reporting line.
+For example, William (ID 7) reports to Jack (4), who reports to John (2), who reports to Jane (1). His path becomes:
+1|2|4|7
+
+Here is the complete table with the correct Path column:
+
+EmployeeID	EmployeeName	ManagerID	Path
+1	          Jane	        (null)	  1
+2	          John	        1	        1|2
+3	          Mariah	      1	        1|3
+4	          Jack	        2	        1|2|4
+5	          Sarah	        2	        1|2|5
+6	          George	      3       	1|3|6
+7	          William	      4	        1|2|4|7
+8	          Melanie	      5	        1|2|5|8
+
+To determine how deep an employee is in the hierarchy, we use the PATHLENGTH() function:
+
+Path_Length = PATHLENGTH(Path)
+This tells us how many levels there are from the root to each employee:
+
+EmployeeName	Path	Path_Length
+Jane	        1	        1
+John	        1|2	      2
+Jack	        1|2|4	    3
+William	      1|2|4|7	  4
+
+Next, we extract hierarchy levels using PATHITEM() to get the ID at each level. We convert them into integers:
+
+Level1 = PATHITEM(Path, 1, INTEGER)
+Level2 = PATHITEM(Path, 2, INTEGER)
+Level3 = PATHITEM(Path, 3, INTEGER)
+Level4 = PATHITEM(Path, 4, INTEGER)
+Resulting output looks like this:
+
+EmployeeName	Level1	Level2	Level3	Level4
+Jane	        1			
+John	        1	      2		
+Jack	        1	      2     	4	
+William	      1     	2	      4     	7
+Melanie	      1     	2     	5	      8
+
+Because these values are just numeric IDs, we use LOOKUPVALUE() to translate them back into employee names. For each level, we check whether the depth is sufficient using IF() to avoid blank lookup errors.
+
+Level1Name = LOOKUPVALUE(EmployeeName, EmployeeID, Level1)
+Level2Name = IF(Path_Length >= 2, LOOKUPVALUE(EmployeeName, EmployeeID, Level2))
+Level3Name = IF(Path_Length >= 3, LOOKUPVALUE(EmployeeName, EmployeeID, Level3))
+Level4Name = IF(Path_Length >= 4, LOOKUPVALUE(EmployeeName, EmployeeID, Level4))
+
+And here’s the result:
+
+EmployeeName	Level1Name	Level2Name	Level3Name	Level4Name
+Jane	        Jane			
+John	        Jane	      John		
+Jack	        Jane	      John	      Jack	
+William	      Jane	      John	      Jack	      William
+Melanie	      Jane	      John	      Sarah     	Melanie
+
+At this point, you can create a drill-down hierarchy in Power BI using the Level Name columns.
+Just add them to a custom hierarchy and use it in a matrix visual to drill through the org chart.
+
+Later, when you're ready to apply RLS (Row-Level Security), you can use the PATHCONTAINS() function to dynamically filter the hierarchy by a logged-in user’s ID. This allows users to only see data for themselves and anyone downstream in their hierarchy chain.
+
+PATHCONTAINS([Path], [LoggedInUserID])
+This works great in organizations where visibility must follow management chains.
+
+Important considerations:
+EmployeeID and ManagerID must have the same data type.
+ManagerID must exist in the EmployeeID column unless it is blank (root).
+Each employee must have only one parent — this is a tree, not a graph.
+Avoid blank or circular references.
+This model is now fully functional and can be scaled for larger organizations, used for dynamic org charts, or applied in role-based access models using RLS.
+
+
+Thank you :) !
+
