@@ -1,0 +1,149 @@
+Dynamic-rls-guide - RLS (Dynamic Method)
+
+This repo explains how Dynamic Row-Level Security (RLS) works in Power BI. It is important to note that users of the visualization must have Viewer access to the workspace.
+If they have Contributor or Admin access, RLS will be bypassed.
+
+Step 1: Start with Your Sales (Fact) Table
+
+You need a Sales table that includes:
+
+* EmployeeKey
+* EmployeeName
+* Other business attributes like Region, Country, Product, etc.
+
+Create your data model and add an Employee Dimension table (DIM\_Employee). This table should include:
+
+* Employee IDs
+* Email addresses
+* Manager relationships (i.e., who reports to whom)
+
+Example:
+
+* userP reports to userB
+* userB reports to user\_zero
+
+**Important:** Ensure that the relationship between `DIM_Employee` and `Sales` is **one-to-many** (one employee, many sales).
+Avoid enabling **bidirectional filtering** on this relationship to prevent filter propagation issues and unpredictable behavior.
+
+Step 2: Define the Hierarchy Path in the Dimension Table
+
+Use the `PATH()` function to define hierarchical structure:
+
+```dax
+PathID = PATH(DIM_Employee[EmployeeID], DIM_Employee[ManagerID])
+```
+
+This returns a delimited string like: `1|2|3`, which represents the chain of command.
+
+**Explanation:**
+`PATH(child, parent)` builds a string that shows the reporting path from the top down to the current user.
+
+Step 3: Add More Hierarchy Details
+
+**PATHLENGTH()**
+
+```dax
+PathLength = PATHLENGTH(DIM_Employee[PathID])
+```
+
+Returns how deep in the hierarchy an employee is (i.e., number of levels).
+
+**PATHITEM()** and **LOOKUPVALUE()**
+To extract names or IDs at different levels:
+
+```dax
+Level1Name = LOOKUPVALUE(DIM_Employee[FullName], DIM_Employee[EmployeeID], PATHITEM(DIM_Employee[PathID], 1, 1))
+```
+
+* `PATHITEM(path, position, type)` returns the value at a specific level. Set `type` to 1 for text.
+* `LOOKUPVALUE()` retrieves the name for a given EmployeeID.
+  Repeat this for all levels in your org structure.
+
+Step 4: Create the RLS Role in Power BI
+
+Go to **Modeling → Manage Roles**. Add a new role with the following DAX filter:
+
+```dax
+PATHCONTAINS(
+     DIM_Employee[PathID],
+     LOOKUPVALUE(
+         DIM_Employee[EmployeeID],
+         DIM_Employee[Email],
+         USERPRINCIPALNAME()
+     )
+)
+```
+
+**Explanation:**
+
+* `USERPRINCIPALNAME()` returns the logged-in user's email.
+* `LOOKUPVALUE()` finds that user's EmployeeID.
+* `PATHCONTAINS()` checks whether that EmployeeID exists in the PathID of other rows, effectively filtering to show only subordinates.
+
+You can extend the rule by adding more filters. Example:
+
+```dax
+&& DIM_Employee[Region] = "US"
+```
+
+Step 5: Publish and Assign Security
+
+Once everything works:
+
+* Publish your report to Power BI Service.
+* Go to the Semantic Model in the workspace.
+* Click `... → Security`
+* Select your RLS Role
+* Add emails for the users you want to include in that role
+
+Now your Dynamic RLS is live, and each user will only see the data they are allowed to see according to the hierarchy.
+
+---
+
+### Common Pitfalls and Best Practices
+
+**• Avoid Circular Hierarchies**
+Ensure your EmployeeID → ManagerID chain does not loop back (e.g., A reports to B and B reports to A). `PATH()` will fail or return blank.
+**Tip:** Add a DAX check to validate hierarchy:
+
+```dax
+IF(PATH(DIM_Employee[EmployeeID], DIM_Employee[ManagerID]) = BLANK(), "Possible Loop", "Valid")
+```
+
+**• No Matching Email = No Access**
+If the user's email doesn't exist in the Email column of `DIM_Employee`, `LOOKUPVALUE()` returns blank → `PATHCONTAINS()` fails → user sees nothing.
+Make sure user emails are mapped in your DIM table and cleanly loaded.
+
+**• Always Test in the Service**
+Use "View As Role" in Desktop for simulation, but the Power BI Service is the real test. Assign user emails under Security settings to validate.
+
+**• Normalize Email Case**
+Sometimes emails differ in casing (e.g., [User@domain.com](mailto:User@domain.com) vs [user@domain.com](mailto:user@domain.com)). DAX can be case-sensitive.
+**Use `LOWER()` in your DAX filter:**
+
+```dax
+LOOKUPVALUE(DIM_Employee[EmployeeID], LOWER(DIM_Employee[Email]), LOWER(USERPRINCIPALNAME()))
+```
+
+**• RLS is Not Obfuscation**
+If someone has Contributor or Admin access, they can download the PBIX and see all data. RLS is not a security perimeter, just a filter.
+**Only assign Viewer role** to RLS users.
+
+**• Keep DAX Clean for Performance**
+Avoid deeply nested or over-complicated DAX. `LOOKUPVALUE()` on a large table can get slow if not indexed properly.
+Precompute attributes where possible.
+
+**• Use Single Direction Relationships Only**
+In your model, the relationship between `DIM_Employee` and `Sales` should be single-directional (from DIM\_Employee to Sales).
+**Avoid bidirectional filtering**, especially when using parent-child hierarchies, as it can lead to unexpected behavior and performance issues.
+
+---
+
+### Key Takeaways:
+
+* ✅ Dynamic RLS scales for growing organizations
+* ✅ No need to manually manage dozens of static roles
+* ✅ Works great with Parent-Child hierarchies and regional filters
+* ✅ Strong for delegated, layered org access cont
+
+Thank you :)
