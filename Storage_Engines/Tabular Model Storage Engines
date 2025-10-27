@@ -1,0 +1,116 @@
+A deep technical guide to understanding how Power BI and Analysis Services (Tabular) models store and process data through their engines.  
+This document consolidates the relationship between **storage engines**, **data islands**, and **model storage modes**, providing a foundation for DAX optimization and performance tuning.
+
+---
+
+## ⚙️ Storage Engines Overview
+
+### 1. **VertiPaq**
+- **Type:** In-memory, columnar database.
+- **Used in:** Import mode.
+- **Behavior:**
+  - Data is loaded and compressed in RAM.
+  - Supports parallel scans and advanced compression (Dictionary, Run-Length, and Value Encoding).
+  - Communicates with the Formula Engine using **xmSQL**, an internal query language.
+- **Strengths:** Extremely fast, CPU-efficient, ideal for aggregations.
+- **Limitations:** Requires data to fit in memory; refresh cycles are needed.
+
+---
+
+### 2. **DirectQuery over SQL**
+- **Type:** Live connection to a relational database (SQL Server, Synapse, etc.).
+- **Used in:** DirectQuery mode.
+- **Behavior:**
+  - No data stored in VertiPaq.
+  - Formula Engine sends T-SQL queries directly to the source.
+- **Strengths:** Real-time access to data; no refresh.
+- **Limitations:** Network latency, source performance, and lack of VertiPaq caching.
+
+---
+
+### 3. **DirectQuery over AS**
+- **Type:** Live connection to a remote Tabular model (Power BI semantic model or Azure Analysis Services).
+- **Used in:** Composite or thin models.
+- **Behavior:**
+  - Formula Engine sends DAX queries to the remote model’s Formula Engine.
+  - The remote engine executes VertiPaq or other SE operations on its side.
+- **Strengths:** Centralized corporate data models.
+- **Limitations:** Latency and dependency on remote dataset design and performance.
+
+---
+
+## 🧩 Formula Engine vs. Storage Engine
+
+| Component | Role | Characteristics |
+|------------|------|-----------------|
+| **Formula Engine (FE)** | Executes DAX logic, builds filter contexts, coordinates SEs. | Smart but slow (CPU-bound, single-threaded). |
+| **Storage Engine (SE)** | Scans and aggregates data from memory or remote sources. | Fast, parallelized, limited to basic math and joins. |
+
+> **Rule:** Push as much work as possible to the SE; minimize FE computation.
+
+---
+
+## 🌍 Data Islands Concept
+
+A **data island** represents an independent storage engine or data source within a model.  
+Each island has its own query engine and can’t directly share intermediate results with others — the **Formula Engine** must merge them.
+
+### Examples:
+| Scenario | Islands | Engines |
+|-----------|----------|---------|
+| Pure Import | 1 | VertiPaq |
+| DirectQuery (SQL) | 1 | SQL |
+| Composite (Import + AS) | 2 | VertiPaq + AS |
+| Mixed (Import + SQL) | 2 | VertiPaq + SQL |
+| Multi-source DQ | 2+ | Multiple SQL islands |
+
+**Dual Mode Tables** can belong to either island at runtime, reducing cross-island merges.
+
+---
+
+## 🧱 Model Storage Modes
+
+| Mode | Description | Engines Used | # of Islands | Notes |
+|------|--------------|---------------|---------------|-------|
+| **Import** | Data fully loaded into VertiPaq. | VertiPaq | 1 | Fastest; data in RAM. |
+| **DirectQuery** | Data queried live from SQL or AS. | SQL or AS | 1 | Real-time, slower. |
+| **Composite** | Import + DirectQuery over AS. | VertiPaq + AS | 2 | Common in enterprise setups. |
+| **Mixed** | Any combination (Import + SQL, etc.). | Multiple | 2+ | Most flexible, but complex. |
+
+---
+
+## ⚡ Performance Insights
+
+- **High SE Time** → Good; SE doing the heavy lifting.
+- **High FE Time** → Inefficient DAX or cross-island queries.
+- **xmSQL only** → VertiPaq is active (Import mode).
+- **xmSQL + SQL traces** → Mixed model; multiple engines.
+- **Best practices:**
+  - Use a **star schema**.
+  - Make dimension tables **Dual** in mixed models.
+  - Keep DAX **set-based** (avoid iterators).
+  - Use Power Query for ETL, not DAX.
+  - For DirectQuery: ensure indexes, reduce visuals, monitor gateway latency.
+
+---
+
+## 🧠 Key Takeaways
+
+- **VertiPaq** is the *heart* of Import models — compressed, in-memory, lightning fast.
+- **FE is the brain** — coordinates logic and merges across islands.
+- **SE is the muscle** — scans, filters, and aggregates.
+- **Compression = Speed** — fewer bytes scanned = faster results.
+- **Minimize data islands** — every island adds overhead.
+
+> **Think like the engine:** Let VertiPaq work, keep the FE calm, and avoid unnecessary cross-engine chatter.
+
+---
+
+### 📚 References
+- Marco Russo & Alberto Ferrari — *Optimizing DAX*
+- SQLBI Articles — [https://www.sqlbi.com](https://www.sqlbi.com)
+- Microsoft Docs — *Analysis Services Tabular Model Architecture*
+
+---
+
+Thank you :)
