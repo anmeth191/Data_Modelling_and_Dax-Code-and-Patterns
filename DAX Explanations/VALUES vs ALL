@@ -1,0 +1,116 @@
+Understanding Cardinality and Evaluation Context
+This note documents the conceptual and practical difference between VALUES and ALL in DAX, using cardinality as the primary mental model.
+
+Core Concept: Cardinality in DAX
+In DAX, it is clearer to think in terms of cardinality, not grain.
+Cardinality is the number of distinct values of a column in the current filter context.
+
+DAX functions like VALUES and ALL do not change model grain or row meaning.
+They only change which set of distinct values (cardinality) is active during evaluation.
+
+VALUES(Column)
+
+Definition
+VALUES(Column) returns a table containing the distinct values of the column that are active in the current filter context.
+
+This is the current cardinality.
+What affects VALUES
+Visual rows and columns
+Slicers
+Page / report filters
+CALCULATE filters
+Relationship propagation
+Behavior
+
+At row level → cardinality is often 1
+At total level → cardinality equals all values that survive the context
+If the context changes, the returned set changes
+
+Mental model
+“What values of this column are valid right now?”
+
+Typical use cases
+Iterating over the visible set of entities (SUMX, AVERAGEX)
+Fixing totals for non-additive measures
+Reapplying context after REMOVEFILTERS
+Preserving visual grain in calculations
+
+Example
+SUMX(
+    VALUES(Product[Brand]),
+    IF([Sales Amount] > 0, 1, 0)
+)
+
+This evaluates the logic once per visible brand, producing correct totals.
+
+ALL(Column)
+Definition
+
+ALL(Column) returns a table containing all distinct values of the column in the model, ignoring filters.
+This is the model cardinality for that column.
+
+What ALL ignores
+
+Visual context
+Slicers
+Page / report filters
+Direct filters on the specified column(s)
+
+Important rule
+ALL only removes filters on the columns (or table) it references.
+Filters coming from other columns — even in the same table — remain active unless explicitly removed.
+
+Mental model
+“Give me every possible value of this column, regardless of context.”
+
+Typical use cases
+Percent of total
+Baseline comparisons
+Global denominators
+Breaking visual grain intentionally
+
+Example
+SUMX(
+    ALL(Product[Brand]),
+    [Sales Amount]
+)
+
+
+This iterates over all brands in the model, even if the visual shows only one.
+Key Distinction (the important part)
+Function	Cardinality Returned
+VALUES	Current cardinality (context-dependent)
+ALL	Model cardinality (context-independent)
+
+Or stated differently:
+
+VALUES respects the current evaluation context.
+ALL ignores it.
+
+Why VALUES Can Appear Redundant
+In many visuals, the visual itself already supplies a single value of a column (e.g., Brand on rows).
+In those cases, VALUES(Column) returns one value — making it look unnecessary.
+
+However, VALUES becomes essential when:
+Fixing totals for non-additive logic
+Iterating explicitly over entities
+Reapplying context after filters are removed
+Ensuring consistent behavior across different visuals
+
+Common Pitfall
+CALCULATE([Sales Amount], ALL(Product[Brand]))
+This removes Brand filters only.
+If the visual is grouped by Color, the measure will still change by Color.
+
+To remove all Product filters:
+CALCULATE([Sales Amount], ALL(Product))
+
+Summary (pin this)
+VALUES returns current cardinality
+ALL returns model cardinality
+Neither changes model grain
+Both only change which set of values is active
+
+Thank you :)
+
+Understanding this distinction eliminates most confusion around totals, iterators, and filter behavior.
