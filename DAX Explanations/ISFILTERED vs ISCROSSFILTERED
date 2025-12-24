@@ -7,7 +7,6 @@ Returns TRUE if the column is directly filtered in the current filter context.
 
 What counts as “direct”
 Slicer on that column
-
 Filter pane on that column
 Visual interaction targeting that column
 CALCULATE( …, Table[Column] = value ) on that same column
@@ -117,7 +116,7 @@ The recreated matrix demonstrates all rules simultaneously:
 
 Context	  ISFILTERED	ISCROSSFILTERED(Customer)	ISCROSSFILTERED(Sales)	ISCROSSFILTERED(Product)	Product (Bidirectional)
 Continent	FALSE	      TRUE	                    TRUE	                  FALSE	                    TRUE
-Gender	  TRUE	      TRUE	                    TRUE	                  FALSE	                    TRUE
+Gender	    TRUE	      TRUE	                    TRUE	                  FALSE	                    TRUE
 Total	    FALSE	      FALSE	                    FALSE	                  FALSE                    	FALSE
 
 Why this matters
@@ -134,4 +133,4 @@ Same-table indirect effects → ISCROSSFILTERED(Column)
 Cross-table effects → depend on relationship direction
 Totals should be FALSE → always verify
 
-Thank you !
+Thank you :) !
