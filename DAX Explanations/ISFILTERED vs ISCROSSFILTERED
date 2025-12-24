@@ -1,0 +1,137 @@
+This repo documents how DAX detects filters, how filter propagation works across a star schema, and when to use ISFILTERED vs ISCROSSFILTERED.
+All examples assume a standard Customer → Sales ← Product model unless stated otherwise.
+
+1. ISFILTERED(Column)
+Meaning
+Returns TRUE if the column is directly filtered in the current filter context.
+
+What counts as “direct”
+Slicer on that column
+
+Filter pane on that column
+Visual interaction targeting that column
+CALCULATE( …, Table[Column] = value ) on that same column
+
+What does NOT count
+Filters on other columns in the same table
+Filters coming from related tables
+Relationship propagation
+
+Best use cases
+Detecting user intent
+UX logic (warnings, messages, conditional formatting)
+“Did the user explicitly filter this field?”
+
+Example
+
+ISFILTERED(Product[Brand])
+If Product[Color] = "Red" is applied:
+ISFILTERED(Product[Brand]) → FALSE
+ISFILTERED(Product[Color]) → TRUE
+
+2. ISCROSSFILTERED(Column)
+Meaning
+Returns TRUE if the column’s visible values are reduced, either:
+directly, or indirectly (same table or via relationships)
+
+Important rule
+All filtered columns are cross-filtered, but not all cross-filtered columns are filtered.
+
+Best use cases
+Detecting data reduction
+Validating whether results are partial
+Understanding whether values are missing due to context
+
+Example:
+Same-table behavior (predictable) 
+CALCULATE(
+    ISCROSSFILTERED(Product[Brand]),
+    Product[Color] = "Red"
+)
+
+ISFILTERED(Product[Brand]) → FALSE
+ISCROSSFILTERED(Product[Brand]) → TRUE
+Because the Product table is reduced.
+
+IMPORTANT !!!!! USE THIS AS RECOMMENDED BY SQLBI EXPERTS !
+
+3. ISCROSSFILTERED(Table)
+
+Meaning
+Returns TRUE if any column in the table is cross-filtered.
+This is the most robust and recommended pattern in real models.
+
+Why this is preferred
+Filters converge on the fact table
+You usually care whether the result set is constrained, not which column caused it
+Column-level checks are brittle
+
+Best use cases
+Fact table completeness checks
+Conditional totals logic
+“Am I looking at a filtered subset of data?”
+
+Example
+ISCROSSFILTERED(Sales)
+
+This returns TRUE when:
+Customer is filtered
+Product is filtered
+Date is filtered
+Any dimension reduces Sales rows
+Relationship Direction Matters (Critical) In a standard star schema: Customer ─▶ Sales ◀─ Product
+
+Customer filters Sales (YES) 
+Product filters Sales  (YES)
+Sales does NOT filter Product (NO)
+Sales does NOT filter Customer (NO)
+
+Therefore:
+ISCROSSFILTERED(Product)
+will return FALSE when only Customer is filtered — unless you explicitly enable bidirectional filtering.
+
+Forced Bidirectional Example (Validation Tool)
+
+ISCROSSFILTERED_Product_Bidirectional =
+CALCULATE(
+    ISCROSSFILTERED(Product),
+    CROSSFILTER(Product[ProductKey], Sales[ProductKey], BOTH)
+)
+Use this only when you intentionally want fact → dimension propagation inside a measure.
+
+Total Row Behavior (Sanity Check)
+
+At the Total level:
+No dimension is in scope
+No filters are applied
+No rows are reduced
+
+Therefore:
+ISFILTERED(*) → FALSE
+ISCROSSFILTERED(*) → FALSE
+If this is not true, your model or visual context is leaking filters.
+
+Visual Validation (From the Book)
+
+The recreated matrix demonstrates all rules simultaneously:
+
+Context	  ISFILTERED	ISCROSSFILTERED(Customer)	ISCROSSFILTERED(Sales)	ISCROSSFILTERED(Product)	Product (Bidirectional)
+Continent	FALSE	      TRUE	                    TRUE	                  FALSE	                    TRUE
+Gender	  TRUE	      TRUE	                    TRUE	                  FALSE	                    TRUE
+Total	    FALSE	      FALSE	                    FALSE	                  FALSE                    	FALSE
+
+Why this matters
+
+Confirms fact-table convergence
+
+Proves relationship direction controls cross-filtering
+Shows why table-level checks are safer than column-level ones
+
+Final Rules of Thumb (Pin These)
+Detect user intent → ISFILTERED(Dimension[Column])
+Detect data reduction → ISCROSSFILTERED(FactTable)
+Same-table indirect effects → ISCROSSFILTERED(Column)
+Cross-table effects → depend on relationship direction
+Totals should be FALSE → always verify
+
+Thank you !
