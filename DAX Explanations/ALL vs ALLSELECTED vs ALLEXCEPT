@@ -1,0 +1,158 @@
+ALL, ALLSELECTED, and ALLEXCEPT in DAX
+Cardinality, Filter Origin, and Predictable Use Cases
+This note documents how ALL, ALLSELECTED, and ALLEXCEPT behave in DAX and when to use each. The goal is predictability: understanding which filters are removed/kept and why totals/rows sometimes “repeat.”
+
+Core Concept: Cardinality and Filter Origin
+Cardinality is the number of distinct values of a column in the current filter context.
+These functions change which set of values is active during evaluation. They do not change model grain or row meaning.
+
+Filter origin matters:
+Removing filters from Product[Brand] does not remove filters coming from Product[Color].
+Removing filters from Product does not remove filters coming from Date or Customer.
+
+ALL
+Definition
+
+ALL(Column) returns the full model cardinality of that column (ignores filters on that column).
+ALL(Table) removes filters from all columns in that table.
+
+Key rule
+ALL only removes filters on the columns (or table) it references.
+Filters from other columns remain active unless explicitly removed.
+
+Mental model
+ALL(Product[Brand]) = “ignore Brand filters”
+ALL(Product) = “ignore all Product filters”
+
+Typical use cases
+Percent of grand total
+Baselines that should ignore slicers/visual grouping
+Resetting a specific column’s filters while leaving others intact
+
+Examples
+Percent of grand total by Brand
+Sales % of All Brands =
+DIVIDE(
+    [Sales Amount],
+    CALCULATE([Sales Amount], ALL(Product[Brand]))
+)
+
+
+Remove all Product filters
+Sales (Ignore Product) =
+CALCULATE([Sales Amount], ALL(Product))
+
+
+Common pitfall
+If a visual is grouped by Product[Color], then:
+CALCULATE([Sales Amount], ALL(Product[Brand]))
+will still vary by Color because Color is still filtering the result.
+
+ALLSELECTED
+Definition
+ALLSELECTED(Column) returns the set of distinct values for the column under the user-selected context, while ignoring the visual’s current row/column grain.
+
+It typically:
+Respects slicers, page filters, report filters
+Ignores visual grouping (the current cell/row context)
+Mental model
+“Give me the values the user selected overall, not the one value in this row.”
+
+Typical use cases
+
+Percent of selected total
+Stable denominators in matrices (same denominator across rows)
+“Within selection” comparisons that should respect slicers but not row context
+
+Example
+
+Percent of selected total (brands selected in slicer/page/report)
+Sales % of Selected Brands =
+DIVIDE(
+    [Sales Amount],
+    CALCULATE([Sales Amount], ALLSELECTED(Product[Brand]))
+)
+
+
+Behavior
+If user selects 5 brands in a slicer → denominator = sales of those 5 brands
+In a matrix by Brand → denominator stays constant (does not change per row)
+If no selection → denominator acts like “all visible selection” (often close to ALL, but not identical)
+
+Practical note
+If you need a denominator that respects slicers but not the visual grain, ALLSELECTED is usually the correct tool.
+
+ALLEXCEPT
+Definition
+
+ALLEXCEPT(Table, Col1, Col2, …) removes filters from the entire table except the filters that currently exist on the listed columns.
+Critical caveat (validated in visuals)
+ALLEXCEPT preserves filters; it does not create them.
+If an “except” column is not present in the current filter context, there is no filter to preserve—so ALLEXCEPT behaves like ALL(Table) for that table.
+This is the main source of confusion.
+
+Mental model
+“Clear the table’s filters, but keep the filters currently applied to these columns (if any exist).”
+
+Typical use cases
+Measures that should respond only to specific columns from a table (when those columns are guaranteed to be in context)
+“Keep Color, ignore Brand and Category” patterns inside Product
+
+Example: keep Color only (Product)
+Sales (Only Color Affects It) =
+CALCULATE(
+    [Sales Amount],
+    ALLEXCEPT(Product, Product[Color])
+)
+
+
+If the visual has Brand + Color + Category:
+Brand filters removed
+Category filters removed
+Color preserved
+→ measure reacts only to Color (from Product)
+
+Caveat example (why it surprises people)
+If the visual only has Customer[Gender] on rows and you write:
+Customers (Keep Customer Type) =
+CALCULATE(
+    [Number of customers],
+    ALLEXCEPT(Customer, Customer[Customer Type])
+)
+
+But Customer Type is not in the filter context, then:
+there is no Customer Type filter to preserve
+all Customer filters are removed
+Gender filter disappears
+result repeats (looks like “ALL Customers” per row)
+
+More robust alternative when “except” may not be in context
+
+If you want behavior that stays consistent across visuals, explicitly capture and reapply the intended set:
+Customers (Stable by Type) =
+VAR TypesInContext = VALUES(Customer[Customer Type])
+RETURN
+CALCULATE(
+    [Number of customers],
+    REMOVEFILTERS(Customer),
+    KEEPFILTERS(TypesInContext)
+)
+
+
+This pattern is explicit:
+clears Customer filters
+reapplies Customer Type based on the current context (if present)
+
+Quick Comparison Table
+Function	What it returns	What it respects	Best for
+ALL	model cardinality	nothing on referenced columns/table	grand totals, baselines
+ALLSELECTED	user-selected cardinality	slicers/page/report filters	% of selected total
+ALLEXCEPT	table with filters removed except listed columns	only existing filters on “except” cols	keep specific cols, ignore others
+Final Rules of Thumb (pin this)
+
+Use ALL to ignore filters completely (on specified columns/table).
+Use ALLSELECTED to respect slicers but ignore visual grain (selected totals).
+
+Thank you :)
+
+Use ALLEXCEPT only when you are confident the “except” columns will be in context; otherwise prefer an explicit VALUES + KEEPFILTERS reapplication pattern.
