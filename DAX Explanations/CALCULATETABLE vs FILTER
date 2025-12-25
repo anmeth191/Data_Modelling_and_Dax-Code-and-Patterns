@@ -1,0 +1,151 @@
+This note documents the practical difference between CALCULATETABLE and FILTER, including common pitfalls around table variables (“materialized” virtual tables), context transition, and relationship behavior.
+
+Core mental model
+
+CALCULATETABLE
+Context-first (set-based).
+Rewrites filter context (like CALCULATE), then evaluates the table expression once under the resulting context.
+Naturally respects relationships because filter context propagates through the model.
+Think: “Return this table as if these filters were applied.”
+
+FILTER
+Row-first (iterative).
+Iterates the input table row by row and keeps rows where the predicate is TRUE.
+Great for complex conditions (especially measure-based) and for filtering already-built table variables.
+Think: “From this table, keep only rows that satisfy this condition.”
+
+Typical use cases
+
+Prefer CALCULATETABLE when
+Your filtering can be expressed as filter arguments (e.g., Column = Value, IN, etc.).
+You want relationship propagation “for free.”
+You want to return a table with a specific shape (e.g., distinct brands) without building cross-joins.
+
+Prefer FILTER when
+The condition must be evaluated per row (especially if it depends on measures).
+You already have a table variable (a computed/returned table) and want to restrict it further.
+You need “big hammer” control over a constructed table (including virtual tables).
+
+Key behavior differences (what actually bites people)
+1) CALCULATETABLE filters context; FILTER filters rows
+CALCULATETABLE modifies the model’s filter context and then evaluates the table expression.
+FILTER does not modify filter context; it only filters the rows of its input table.
+
+2) Table variables are not “re-evaluated” by CALCULATETABLE
+
+If you store a table expression in a variable, CALCULATETABLE(tableVar, …) typically will not reshape it using the new filter arguments.
+To restrict an already-produced table variable, use FILTER(tableVar, …).
+
+Code examples
+Example A — Context-first filtering (best fit for CALCULATETABLE)
+Return brands that have products in Red or Blue:
+
+EVALUATE
+CALCULATETABLE(
+    VALUES(Product[Brand]),
+    Product[Color] IN {"Red", "Blue"}
+)
+Why this is clean:
+VALUES(Product[Brand]) defines the output shape (distinct brands)
+Filters apply via filter context, so relationships behave normally
+
+Example B — Row-first filtering changes the output grain
+This returns Brand–Color pairs (not just brands), because the input table includes both columns:
+
+EVALUATE
+FILTER(
+    ALL(Product[Brand], Product[Color]),
+    Product[Color] IN {"Red", "Blue"}
+)
+Result: brands appear twice (Red and Blue), because the table grain is (Brand, Color).
+
+Example C — The classic pitfall: FILTER doesn’t create context transition
+
+If you compute totals inside ADDCOLUMNS without CALCULATE, every row can show the same number:
+
+EVALUATE
+FILTER(
+    ADDCOLUMNS(
+        VALUES(Product[Brand]),
+        "Total", COUNTROWS(Product)   -- ⚠️ no context transition
+    ),
+    Product[Brand] = "Litware"
+)
+
+
+Why it happens:
+COUNTROWS(Product) is evaluated without Brand being applied per row
+FILTER only removes rows after the fact; it doesn’t change how "Total" was computed
+Fix (add context transition explicitly):
+
+EVALUATE
+FILTER(
+    ADDCOLUMNS(
+        VALUES(Product[Brand]),
+        "Total", CALCULATE( COUNTROWS(Product) )
+    ),
+    Product[Brand] = "Litware"
+)
+
+Example D — Table variable caveat (your real discovery)
+This often does not work the way people expect:
+
+EVALUATE
+VAR T =
+    SUMMARIZECOLUMNS(Product[Color], Product[Category])
+RETURN
+CALCULATETABLE(T, Product[Color] = "Red")   -- may not reshape T
+
+
+Correct approaches:
+Option 1 (best): apply filters at construction time
+
+EVALUATE
+CALCULATETABLE(
+    SUMMARIZECOLUMNS(Product[Color], Product[Category]),
+    Product[Color] = "Red"
+)
+
+
+Option 2: filter the already-built table variable
+EVALUATE
+VAR T =
+    SUMMARIZECOLUMNS(Product[Color], Product[Category])
+RETURN
+FILTER(T, Product[Color] = "Red")
+
+
+Rule:
+want filters to affect the construction → put them in CALCULATETABLE(...)
+want to restrict an already-produced table variable → FILTER(tableVar, ...)
+
+Example E — When FILTER is necessary (measure-based predicate)
+
+“Products with Sales > 0” requires a row-by-row test:
+EVALUATE
+FILTER(
+    VALUES(Product[ProductKey]),
+    CALCULATE([Sales Amount]) > 0
+)
+
+Why FILTER is appropriate:
+The predicate depends on a measure evaluated per entity
+This cannot be expressed as a simple column filter argument alone
+
+Performance notes (practical, not dogma)
+CALCULATETABLE is usually more efficient for simple filters because it can be executed as set-based filtering and leverage storage-engine optimizations.
+FILTER is an iterator; it can be slower on large tables, especially with complex predicates.
+“Slower” is not absolute—always validate performance in your model if it’s mission-critical.
+
+Relationship and column access considerations
+CALCULATETABLE uses filter context and relationships naturally.
+FILTER evaluates the condition on the rows of the input table. If the column you need isn’t present in that table, you may need RELATED (or restructure the input table to include required columns).
+
+Summary (pin this)
+
+CALCULATETABLE = change filter context first, evaluate a table expression once (set-based, relationship-friendly).
+FILTER = iterate a table and keep rows where predicate is TRUE (row-based, works on table variables, needed for measure predicates).
+
+Thank you :)
+
+If a table is already stored in a variable, FILTER filters it; CALCULATETABLE usually won’t retroactively reshape it.
