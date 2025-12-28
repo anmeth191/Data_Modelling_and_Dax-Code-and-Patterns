@@ -1,0 +1,120 @@
+CALCULATE
+
+Context-rewriting (not row-iterating).
+
+CALCULATE does not compute values row by row.
+It derives a new filter context from the existing one, then evaluates the expression once under that new context.
+
+Think:
+“Take the current context, reshape it according to these rules, then evaluate the expression.”
+
+Original evaluation context
+Before CALCULATE runs, there is an original evaluation context consisting of:
+Filter context
+Visual rows/columns
+Slicers
+Page/report filters
+Relationship propagation
+Row context (optional)
+Only exists if CALCULATE is called inside an iterator (SUMX, ADDCOLUMNS, FILTER, etc.)
+
+Visuals never create row context.
+They only create filter context (conceptually similar to a SQL WHERE clause).
+
+CALCULATE execution algorithm (conceptual)
+CALCULATE follows a fixed, deterministic pipeline:
+
+1. Evaluate explicit filter arguments (early)
+All filter arguments are evaluated in the original evaluation context
+They can see:
+original filter context
+row context (if present)
+Each filter argument is evaluated independently
+Nothing is applied yet
+Key idea:
+Filters are computed early, not applied early.
+
+2. Context transition (conditional)
+If a row context exists, CALCULATE performs context transition
+Current row values are converted into equivalent column filters
+
+These filters:
+may match one row, many rows, or zero rows
+do not guarantee single-row evaluation
+If no row context exists, this step is skipped
+Context transition only matters inside iterators.
+
+3. Apply CALCULATE modifiers
+Modifiers are applied after context transition.
+
+These include:
+Filter-removal / reshaping:
+ALL, REMOVEFILTERS, ALLEXCEPT, ALLSELECTED
+Relationship modifiers:
+USERELATIONSHIP
+CROSSFILTER
+Because they run after context transition, they can remove or alter filters created by it.
+Key implication:
+Context transition can be undone or redirected by modifiers.
+
+4. Apply explicit filter arguments (late)
+The results of filter arguments evaluated in step 1 are now applied
+They are applied after:
+context transition
+ALL* modifiers
+relationship changes
+This is why:
+Explicit filters are not removed by ALL
+Filter argument order does not matter
+Filters do not cascade inside CALCULATE
+Key idea:
+Filters are applied last, so they “win” over ALL*.
+
+5. Evaluate the expression
+The expression (first argument) is evaluated
+Evaluation happens in filter context only
+Row context does not participate
+Row context may still exist outside CALCULATE (in the iterator), but the expression itself never sees it.
+
+Replacement vs refinement (KEEPFILTERS)
+Default behavior (replacement)
+
+A Boolean filter argument like:
+Product[Brand] = "Contoso"
+replaces any existing filter on Product[Brand] coming from the original context.
+
+Effect:
+Visual Brand rows are overridden
+Values repeat across Brand rows
+KEEPFILTERS (refinement)
+
+KEEPFILTERS is not a CALCULATE modifier.
+It is a filter-argument modifier.
+It tells CALCULATE:
+“Apply this filter without removing any existing filter on the same column.”
+
+Effects:
+If Brand is already filtered to Contoso → value shows
+If Brand is filtered to another value → no rows qualify → BLANK()
+If Brand is not filtered → Brand = Contoso is applied normally
+KEEPFILTERS does not add a second filter; it makes the existing restriction stricter.
+
+Rewrite filter context — what this really means
+“Rewrite” means:
+CALCULATE takes the existing set of column and relationship filters and produces a new, derived filter context by removing, replacing, refining, and adding filters according to its rules.
+
+It does not mean:
+procedural execution
+step-by-step row filtering
+modifying the visual
+It is a pure transformation from one context to another.
+
+Practical implications
+Measures already evaluate in filter context; they do not need context transition for visuals
+Iterators require CALCULATE to convert row context into filters
+ALL can remove filters created by context transition
+Explicit filters always apply after ALL
+Clean star schemas make context transition and propagation predictable
+Broken relationships or lost lineage often require TREATAS
+
+Thank you :)
