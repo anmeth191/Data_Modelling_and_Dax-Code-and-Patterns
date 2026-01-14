@@ -1,0 +1,72 @@
+# Disconnected Slicer Table Pattern (Brand Comparison)
+
+## What this solves
+Sometimes a slicer should **not** filter the model automatically. Instead, the slicer is used as an **input** to measures.
+
+Example: show all brands in a visual, but let the user pick a **benchmark brand** to compare against.
+
+If the slicer uses `Product[Brand]` directly, selecting a brand would filter the visual down to only that brand — comparison becomes impossible.
+
+## Core idea
+1. Create a **disconnected selector table** (no relationships).
+2. Use the selector table in a slicer.
+3. Read the slicer selection inside a measure using `VALUES` or `SELECTEDVALUE`.
+4. Apply that selection manually to the real model using `CALCULATE`.
+
+## Step 1 — Disconnected selector table
+Create a calculated table:
+
+```DAX
+Sel Brand =
+ALL( Product[Brand] )
+
+Important: Do not create relationships from Sel Brand to any other table.
+Use Sel Brand[Brand] in a slicer.
+
+Measure Option A — Multi-select capable (VALUES + IN) + Defensive checks
+Use this when you want the slicer to allow one or many brands.
+
+Comparison =
+VAR selected_Brands = VALUES ( 'Sel Brand'[Brand] )
+VAR measure_check =
+    HASONEVALUE ( 'Sel Brand'[Brand] )
+        && HASONEVALUE ( 'Product'[Brand] )
+VAR current_sales = [Sales Amount]
+VAR selBrandSales =
+    CALCULATE ( [Sales Amount], 'Product'[Brand] IN selected_Brands )
+VAR comparison =
+    DIVIDE ( current_sales, selBrandSales )
+RETURN
+    IF ( measure_check, comparison )
+
+Notes
+VALUES('Sel Brand'[Brand]) captures the slicer selection as a table.
+'Product'[Brand] IN selected_Brands applies it manually.
+HASONEVALUE prevents meaningless results when:
+the visual is not at Brand level (e.g., Category rows)
+the slicer selection is not exactly one brand (depending on your slicer settings)
+
+Measure Option B — Single-select style (SELECTEDVALUE + =) + Minimal guard
+Use this when you expect only one brand to be selected.
+
+Comparison2 =
+VAR selected_brand =
+    SELECTEDVALUE ( 'Sel Brand'[Brand] )
+VAR current_sales = [Sales Amount]
+VAR calc_sales =
+    CALCULATE ( [Sales Amount], 'Product'[Brand] = selected_brand )
+VAR division =
+    DIVIDE ( current_sales, calc_sales )
+RETURN
+    IF ( HASONEVALUE ( 'Product'[Brand] ), division )
+
+Notes
+SELECTEDVALUE returns BLANK if the slicer has none or multiple selections.
+In those cases the denominator becomes BLANK and DIVIDE returns BLANK (fails safe).
+HASONEVALUE(Product[Brand]) ensures the visual is at Brand granularity.
+
+When to use which
+Option A (VALUES + IN): best when you want to support multi-select explicitly or build more complex logic.
+Option B (SELECTEDVALUE + =): simplest and fast when you want single-select behavior.
+
+Thank you :)
