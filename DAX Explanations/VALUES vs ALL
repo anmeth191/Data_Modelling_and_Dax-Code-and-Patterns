@@ -1,29 +1,31 @@
-Understanding Cardinality and Evaluation Context
-This note documents the conceptual and practical difference between VALUES and ALL in DAX, using cardinality as the primary mental model.
+Purpose
+This note explains the conceptual and practical difference between VALUES and ALL in DAX using cardinality as the main mental model, 
+and adds the critical missing concept that explains many “why isn’t this the total?” surprises: cross-filtering. 
+It also documents the “REMOVEFILTERS + VALUES” pattern used to correctly compute totals-like cardinalities in matrix cells.
 
 Core Concept: Cardinality in DAX
 In DAX, it is clearer to think in terms of cardinality, not grain.
-Cardinality is the number of distinct values of a column in the current filter context.
+Cardinality = the number of distinct values of a column that are visible in the current filter context.
 
 DAX functions like VALUES and ALL do not change model grain or row meaning.
 They only change which set of distinct values (cardinality) is active during evaluation.
 
 VALUES(Column)
-
 Definition
-VALUES(Column) returns a table containing the distinct values of the column that are active in the current filter context.
+VALUES(Column) returns a table containing the distinct values of the column that are visible in the current filter context.
+This represents the current cardinality (context-dependent).
 
-This is the current cardinality.
 What affects VALUES
 Visual rows and columns
 Slicers
 Page / report filters
 CALCULATE filters
 Relationship propagation
-Behavior
+Cross-filtering caused by filters on other columns/tables
 
+Behavior
 At row level → cardinality is often 1
-At total level → cardinality equals all values that survive the context
+At total level → cardinality equals all values that survive the current context
 If the context changes, the returned set changes
 
 Mental model
@@ -32,33 +34,30 @@ Mental model
 Typical use cases
 Iterating over the visible set of entities (SUMX, AVERAGEX)
 Fixing totals for non-additive measures
-Reapplying context after REMOVEFILTERS
-Preserving visual grain in calculations
+Preserving visual semantics in calculations
+Counting the “currently possible” entities after removing a direct filter
+Reapplying visible context after filters are removed (especially in totals logic)
 
 Example
 SUMX(
-    VALUES(Product[Brand]),
-    IF([Sales Amount] > 0, 1, 0)
+VALUES(Product[Brand]),
+IF([Sales Amount] > 0, 1, 0)
 )
+This evaluates once per visible brand, producing correct totals.
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-This evaluates the logic once per visible brand, producing correct totals.
-
-ALL(Column)
+ALL(Column) / ALL(Table)
 Definition
+ALL(Column) returns a table containing all distinct values of the column in the model, ignoring filters on that column.
 
-ALL(Column) returns a table containing all distinct values of the column in the model, ignoring filters.
-This is the model cardinality for that column.
-
+This represents the model cardinality for that column (context-independent for the referenced column(s)).
 What ALL ignores
-
-Visual context
-Slicers
-Page / report filters
-Direct filters on the specified column(s)
+Visual context / slicers / page filters that target the referenced column(s)
+Direct filters on the referenced column(s)
 
 Important rule
 ALL only removes filters on the columns (or table) it references.
-Filters coming from other columns — even in the same table — remain active unless explicitly removed.
+Filters coming from other columns can still affect results unless those columns are also removed.
 
 Mental model
 “Give me every possible value of this column, regardless of context.”
@@ -67,50 +66,105 @@ Typical use cases
 Percent of total
 Baseline comparisons
 Global denominators
-Breaking visual grain intentionally
+Intentionally breaking visual grain
 
 Example
 SUMX(
-    ALL(Product[Brand]),
-    [Sales Amount]
+ALL(Product[Brand]),
+[Sales Amount]
 )
 
-
 This iterates over all brands in the model, even if the visual shows only one.
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Key Distinction (the important part)
-Function	Cardinality Returned
-VALUES	Current cardinality (context-dependent)
-ALL	Model cardinality (context-independent)
+
+Function: VALUES
+Returns: Current cardinality (context-dependent)
+
+Function: ALL
+Returns: Model cardinality (context-independent for referenced columns)
 
 Or stated differently:
-
 VALUES respects the current evaluation context.
-ALL ignores it.
+ALL ignores the current evaluation context for the referenced column(s).
 
-Why VALUES Can Appear Redundant
-In many visuals, the visual itself already supplies a single value of a column (e.g., Brand on rows).
-In those cases, VALUES(Column) returns one value — making it look unnecessary.
+The Critical Missing Concept: Cross-Filtering
 
-However, VALUES becomes essential when:
+Here’s the part that breaks intuition:
+
+Removing filters from a column does NOT guarantee that all its values become visible.
+A column can still lose visible values because of filters on other columns. This is called cross-filtering.
+
+Definition
+A column is cross-filtered if some of its values are not visible because a filter on a different column (through relationships and model structure) restricts which values can appear.
+
+Example (Brand cross-filtered by Category)
+If Category = “Cameras and camcorders”, then only brands that have products in that category can appear.
+Even if you remove the direct filter on Brand, the category filter still prevents unrelated brands from appearing.
+
+Therefore:
+“No direct Brand filter” is not the same as “all brands visible”.
+It means “all brands that survive the other filters”.
+
+This is the reasoning behind the book’s “counterintuitive” claim:
+Counting visible brands after removing the Brand filter is not the same as counting all brands in the model.
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Why REMOVEFILTERS(Brand) + VALUES(Brand) is the correct totals pattern
+
+In a matrix cell, the filter context often contains multiple filters at once, e.g.:
+
+Product[Category] = Cameras and camcorders
+Product[Brand] = Fabrikam (because the matrix is split by Brand)
+
+If you want the number of brands that would appear in the Brand total (or Year total) for that same context, you must:
+Remove the direct Brand filter (so you’re not stuck counting only the current Brand)
+Count the brands that remain visible under the remaining filters (Category is still active and cross-filters Brand)
+
+Correct pattern:
+NumberOfAllBrands =
+CALCULATE(
+COUNTROWS( VALUES( Product[Brand] ) ),
+REMOVEFILTERS( Product[Brand] )
+)
+
+Explanation
+REMOVEFILTERS(Product[Brand]) removes the current cell’s Brand filter (e.g., Fabrikam)
+VALUES(Product[Brand]) then returns the set of brands still visible under the remaining filters (Category, Year, etc.)
+COUNTROWS counts that visible set
+
+Result
+This returns the correct category-specific brand count (e.g., 3 brands for Cameras and camcorders), not the model-wide brand count.
+
+Why ALL(Product[Brand]) is wrong here
+COUNTROWS( ALL(Product[Brand]) ) tends to return the model-wide brand count (e.g., 11) regardless of Category, which is incorrect when the goal is “brands visible for this category after removing the direct Brand split.”
+
+Why VALUES can look redundant (but isn’t)
+In many visuals, the visual already supplies a single value of a column (e.g., Brand on rows).
+In those cases, VALUES(Column) returns one value and looks unnecessary.
+
+VALUES becomes essential when:
 Fixing totals for non-additive logic
 Iterating explicitly over entities
-Reapplying context after filters are removed
-Ensuring consistent behavior across different visuals
+Counting “visible entities” under remaining filters after removing a direct filter (REMOVEFILTERS + VALUES pattern)
+Ensuring measures behave consistently across different visuals
 
-Common Pitfall
+Common Pitfall: ALL removes only what you tell it to remove
+
 CALCULATE([Sales Amount], ALL(Product[Brand]))
+
 This removes Brand filters only.
-If the visual is grouped by Color, the measure will still change by Color.
+If the visual is grouped by Category, the measure can still vary by Category because Category remains active.
 
 To remove all Product filters:
 CALCULATE([Sales Amount], ALL(Product))
-
 Summary (pin this)
-VALUES returns current cardinality
-ALL returns model cardinality
+VALUES returns current cardinality (visible values under current context)
+ALL returns model cardinality (ignores context for referenced column(s))
 Neither changes model grain
-Both only change which set of values is active
+Cross-filtering explains why “no filter on Brand” can still mean “not all brands”
 
 Thank you :)
 
-Understanding this distinction eliminates most confusion around totals, iterators, and filter behavior.
+
+For totals-like cardinality in matrix cells: REMOVEFILTERS(Brand) + VALUES(Brand) is often the correct combination
