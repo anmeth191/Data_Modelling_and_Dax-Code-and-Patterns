@@ -1,0 +1,175 @@
+🎯 Objective
+
+Understand how different DAX patterns impact execution in VertiPaq, focusing on:
+
+Storage Engine (SE) vs Formula Engine (FE)
+
+Callback behavior
+
+Query plan shape (number of SE scans)
+
+Iterator vs set-based logic
+
+🧪 Scenario
+
+Model:
+
+Fact table: Sales (~900K rows)
+
+Dimensions: Item, Store, Time, District
+
+Goal:
+Compute total sales where:
+
+Sales[Sum_Regular_Sales_Units] > 2
+
+Grouped by:
+
+Item[Category]
+🔴 Version 1 — Iterator + Measure (Inefficient)
+TestSlowMeasure :=
+SUMX(
+    FILTER(Sales, Sales[Sum_Regular_Sales_Units] > 2),
+    [TotalSales]
+)
+Observations:
+
+Multiple SE queries
+
+CallbackDataID present
+
+Higher FE involvement
+
+Why?
+
+[TotalSales] is evaluated inside an iterator
+
+Requires context transition per row/group
+
+VertiPaq cannot fully execute the measure → callback to Formula Engine
+
+🟡 Version 2 — Iterator + Column (Improved)
+TestSlowMeasure :=
+SUMX(
+    FILTER(Sales, Sales[Sum_Regular_Sales_Units] > 2),
+    Sales[Sum_Regular_Sales_Dollars]
+)
+Observations:
+
+Fewer SE queries
+
+Callback reduced or removed
+
+Better performance
+
+Why?
+
+Expression uses a physical column
+
+VertiPaq can aggregate directly
+
+Less need for Formula Engine involvement
+
+🟢 Version 3 — CALCULATE + Measure (Optimized)
+TestSlowMeasure :=
+CALCULATE(
+    [TotalSales],
+    Sales[Sum_Regular_Sales_Units] > 2
+)
+Observations:
+
+Single SE query
+
+No callback
+
+Clean xmSQL
+
+Best performance
+
+xmSQL Shape:
+SELECT
+    Item[Category],
+    SUM(Sales[Sum_Regular_Sales_Dollars]),
+    SUM(Sales[Sum_Markdown_Sales_Dollars])
+FROM Sales
+LEFT JOIN Item
+    ON Sales[ItemID] = Item[ItemID]
+WHERE Sales[Sum_Regular_Sales_Units] > 2
+Why?
+
+Filter applied as Boolean predicate
+
+[TotalSales] is simple and can be inlined
+
+Entire query executed in Storage Engine
+
+🔍 Key Learnings
+1. Callback = Warning Signal
+
+Appears when VertiPaq cannot execute logic natively
+
+Indicates Formula Engine intervention
+
+CallbackDataID(...) → FE is doing part of the work
+2. Measures Inside Iterators Are Risky
+
+May trigger callbacks
+
+Especially when measure logic is not fully pushable
+
+3. Not All Measures Are Equal
+
+Simple measures (e.g., SUM(column)) can be inlined
+
+Complex measures may force callbacks
+
+4. CALCULATE Enables Pushdown
+
+Boolean filters → pushed to Storage Engine
+
+Avoids row-by-row evaluation
+
+Promotes set-based execution
+
+5. Goal: Single SE Scan
+
+Best-performing queries usually:
+
+Have 1 SE query
+
+No callbacks
+
+Minimal FE time
+
+Use simple aggregations over physical columns
+
+🧠 Final Conclusion
+
+When filters are expressed as Boolean conditions and measures can be reduced to simple column aggregations, the engine can execute the entire query in a single Storage Engine scan without callbacks.
+
+🚀 Practical Rule
+
+Prefer:
+
+CALCULATE(
+    SUM(Fact[Column]),
+    Fact[Condition] = value
+)
+
+Avoid when possible:
+
+SUMX(
+    FILTER(Fact, condition),
+    [Measure]
+)
+🧩 Takeaway
+
+This exercise shows that performance is not about syntax—it’s about how the engine executes the query.
+
+Understanding:
+
+when VertiPaq can do the work
+
+when the Formula Engine is required
+
+is key to writing scalable DAX.
