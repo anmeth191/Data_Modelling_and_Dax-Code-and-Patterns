@@ -1,0 +1,104 @@
+Problem
+
+Filtering on multiple columns from different tables in CALCULATE does not behave like typical column filters.
+
+Example (❌ incorrect):
+
+CALCULATE (
+    [Sales Amount],
+    Product[Brand] = "Contoso" && Customer[Continent] = "North America",
+    Product[Brand] = "Litware" && Customer[Continent] = "Europe"
+)
+
+This fails logically because:
+
+CALCULATE combines filter arguments with AND
+You end up requiring:
+Brand = Contoso AND Brand = Litware → impossible
+
+Correct Concept
+
+When filtering across multiple tables, you must express the filter as a set of valid combinations (tuples):
+(Brand, Continent)
+Not independent filters on each column
+Pattern 1 — CROSSJOIN + FILTER (General Case)
+CALCULATE (
+    [Sales Amount],
+    FILTER (
+        CROSSJOIN (
+            ALL ( Product[Brand] ),
+            ALL ( Customer[Continent] )
+        ),
+        ( Product[Brand] = "Contoso" && Customer[Continent] = "North America" )
+            || ( Product[Brand] = "Litware" && Customer[Continent] = "Europe" )
+    )
+)
+🔍 Behavior
+Formula Engine:
+Scans both columns
+Builds all combinations
+Filters down to valid tuples
+Storage Engine:
+Receives filtered tuple set
+
+⚠️ Cost
+Multiple SE scans
+FE preparation overhead
+Poorer performance when domains grow
+
+Pattern 2 — TREATAS with Tuple Literals (Preferred when possible)
+CALCULATE (
+    [Sales Amount],
+    TREATAS (
+        {
+            ( "Contoso", "North America" ),
+            ( "Litware", "Europe" )
+        },
+        Product[Brand],
+        Customer[Continent]
+    )
+)
+🔍 Behavior
+FE does not need to build combinations
+Tuple set is already known
+Passed directly to SE
+✅ Result
+Fewer SE scans (often 1)
+Cleaner xmSQL
+Better performance
+xmSQL Evidence
+
+Efficient plan generates:
+
+WHERE
+    ('Product'[Brand], 'Customer'[Continent]) IN ( ... )
+
+Important:
+
+This is not a boolean predicate pushdown
+It is a tuple filter applied by the storage engine
+
+Key Insight (from SQLBI)
+
+Multi-column filters are not pushed as boolean expressions.
+The Formula Engine prepares a set of allowed tuples,
+which is then applied by the Storage Engine.
+
+Performance Comparison
+Pattern	FE Work	SE Queries	Notes
+CROSSJOIN + FILTER	High	Multiple	Builds combinations
+TREATAS (tuples)	Low	Minimal (often 1)	Best when tuples known
+When to Use What
+Use TREATAS when:
+You know the exact combinations
+Tuple set is small and static
+You want best performance
+Use CROSSJOIN + FILTER when:
+Tuples are dynamic
+Need to derive combinations from data
+Logic depends on context
+Mental Model
+
+Thank you :)
+
+Apply a filter on the combination of columns
